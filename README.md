@@ -44,4 +44,13 @@ python manage.py makemigrations qras
 
 # 7. Apply them to the database
 python manage.py migrate
+
+# Extras
+
+# Generate random secret key via python
+python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+
+# Check python bit
+python -c "import struct; print(struct.calcsize('P')*8)"
+
 ```

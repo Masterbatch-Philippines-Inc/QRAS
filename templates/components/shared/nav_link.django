@@ -1,0 +1,261 @@
+{% load static %}
+<ul class="navbar-nav pt-lg-3">
+
+  {# ── Scanner & Employee Code — public, no auth needed ── #}
+  {% if not user.is_authenticated %}
+    <li class="nav-item {% if request.resolver_match.url_name == 'scanner' %}active{% endif %}">
+      <a class="nav-link" href="{% url 'scanner' %}">
+        <span class="nav-link-icon d-md-none d-lg-inline-block">
+          <svg fill="#000000" viewBox="0 0 24 24" id="qr-code-scan" data-name="Flat Color" xmlns="http://www.w3.org/2000/svg" class="icon flat-color" >
+            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+            <g id="SVGRepo_iconCarrier">
+              <path id="secondary" d="M12,13v4a1,1,0,0,1-1,1H7a1,1,0,0,1-1-1V13a1,1,0,0,1,1-1h4A1,1,0,0,1,12,13ZM7,10H9a1,1,0,0,0,1-1V7A1,1,0,0,0,9,6H7A1,1,0,0,0,6,7V9A1,1,0,0,0,7,10Zm10,4H15a1,1,0,0,0-1,1v2a1,1,0,0,0,1,1h2a1,1,0,0,0,1-1V15A1,1,0,0,0,17,14Zm0-8H13a1,1,0,0,0-1,1v4a1,1,0,0,0,1,1h4a1,1,0,0,0,1-1V7A1,1,0,0,0,17,6Z" style="fill: #fff;"></path>
+              <path id="primary" d="M21,9a1,1,0,0,1-1-1V4H16a1,1,0,0,1,0-2h4a2,2,0,0,1,2,2V8A1,1,0,0,1,21,9Zm1,11V16a1,1,0,0,0-2,0v4H16a1,1,0,0,0,0,2h4A2,2,0,0,0,22,20ZM4,8V4H8A1,1,0,0,0,8,2H4A2,2,0,0,0,2,4V8A1,1,0,0,0,4,8ZM9,21a1,1,0,0,0-1-1H4V16a1,1,0,0,0-2,0v4a2,2,0,0,0,2,2H8A1,1,0,0,0,9,21Z" style="fill: #fff;"></path>
+            </g>
+          </svg>
+        </span>
+        <span class="nav-link-title">Scanner</span>
+      </a>
+    </li>
+    <li class="nav-item {% if request.resolver_match.url_name == 'employee-code' %}active{% endif %}">
+      <a class="nav-link" href="{% url 'employee-code' %}">
+        <span class="nav-link-icon d-md-none d-lg-inline-block">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-dialpad">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M4 3h2a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1v-2a1 1 0 0 1 1 -1"/>
+            <path d="M18 3h2a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1v-2a1 1 0 0 1 1 -1"/>
+            <path d="M11 3h2a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1v-2a1 1 0 0 1 1 -1"/>
+            <path d="M4 10h2a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1v-2a1 1 0 0 1 1 -1"/>
+            <path d="M18 10h2a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1v-2a1 1 0 0 1 1 -1"/>
+            <path d="M11 10h2a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1v-2a1 1 0 0 1 1 -1"/>
+            <path d="M11 17h2a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1v-2a1 1 0 0 1 1 -1"/>
+          </svg>
+        </span>
+        <span class="nav-link-title">Employee Code</span>
+      </a>
+    </li>
+  {% endif %}
+
+  {% if user.is_authenticated %}
+
+    {# ── Dashboard ───────────────────────────────────────── #}
+    {% if user_perms.dashboard.read %}
+      <li class="nav-item {% if request.resolver_match.url_name == 'approval-records' %}active{% endif %}">
+        <a class="nav-link" href="{% url 'approval-records' %}">
+          <span class="nav-link-icon d-md-none d-lg-inline-block">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+              <path d="M9 3a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-6a2 2 0 0 1 2 -2zm0 12a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-2a2 2 0 0 1 2 -2zm10 -4a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-6a2 2 0 0 1 2 -2zm0 -8a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-4a2 2 0 0 1 -2 -2v-2a2 2 0 0 1 2 -2z"/>
+            </svg>
+          </span>
+          <span class="nav-link-title">Dashboard</span>
+        </a>
+      </li>
+    {% endif %}
+
+    {# ── Attendance ──────────────────────────────────────── #}
+    {% if user_perms.attendance.read %}
+      <li class="nav-item {% if request.resolver_match.url_name == 'attendance-records' %}active{% endif %}">
+        <a class="nav-link" href="{% url 'attendance-records' %}">
+          <span class="nav-link-icon d-md-none d-lg-inline-block">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+              <path d="M20 6v12a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2"/>
+              <path d="M10 16h6"/><path d="M11 11a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/>
+              <path d="M4 8h3"/><path d="M4 12h3"/><path d="M4 16h3"/>
+            </svg>
+          </span>
+          <span class="nav-link-title">Attendance</span>
+        </a>
+      </li>
+    {% endif %}
+
+    {# ── Employees ─────────────────────────────────────────── #}
+    {% if user_perms.employees.read %}
+      {% with employee_page=request.resolver_match.url_name %}
+        <li class="nav-item {% if employee_page == 'employee-records' or employee_page == 'add-employee' or employee_page == 'batch-add-employee' %}active{% endif %}">
+          <a class="nav-link" href="{% url 'employee-records' %}">
+            <span class="nav-link-icon d-md-none d-lg-inline-block">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"/>
+                <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"/>
+              </svg>
+            </span>
+            <span class="nav-link-title">Employees</span>
+          </a>
+        </li>
+      {% endwith %}
+    {% endif %}
+
+    {# ── Management ──────────────────────────────────────── #}
+    {% if user_perms.schedules.read or user_perms.unscheduled.read or user_perms.absences.read or user_perms.attendance.read %}
+      {% with mgmt_page=request.resolver_match.url_name %}
+        <li class="nav-item dropdown {% if mgmt_page == 'schedule-list' or mgmt_page == 'unscheduled-list' or mgmt_page == 'absence-record' or mgmt_page == 'scan-captures' or mgmt_page == 'recompute-log' %}active show{% endif %}">
+          <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="false">
+            <span class="nav-link-icon d-md-none d-lg-inline-block">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path d="M12 21h-6a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v5"/>
+                <path d="M16 3v4"/><path d="M8 3v4"/><path d="M4 11h16"/>
+                <path d="M17.001 19a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/>
+                <path d="M19.001 15.5v1.5"/><path d="M19.001 21v1.5"/>
+                <path d="M22.032 17.25l-1.299 .75"/><path d="M17.27 20l-1.3 .75"/>
+                <path d="M15.97 17.25l1.3 .75"/><path d="M20.733 20l1.3 .75"/>
+              </svg>
+            </span>
+            <span class="nav-link-title">Management</span>
+          </a>
+          <div class="dropdown-menu {% if mgmt_page == 'schedule-list' or mgmt_page == 'unscheduled-list' or mgmt_page == 'absence-record' or mgmt_page == 'scan-captures' or mgmt_page == 'recompute-log' %}show{% endif %}">
+            {% if user_perms.schedules.read %}
+            <a class="dropdown-item {% if mgmt_page == 'schedule-list' %}active{% endif %}" href="{% url 'schedule-list' %}">Schedule Records</a>
+            {% endif %}
+            {% if user_perms.unscheduled.read %}
+            <a class="dropdown-item {% if mgmt_page == 'unscheduled-list' %}active{% endif %}" href="{% url 'unscheduled-list' %}">Unscheduled Employees</a>
+            {% endif %}
+            {% if user_perms.absences.read %}
+            <a class="dropdown-item {% if mgmt_page == 'absence-record' %}active{% endif %}" href="{% url 'absence-record' %}">Absences</a>
+            {% endif %}
+            {% if user_perms.attendance.read %}
+            <a class="dropdown-item {% if mgmt_page == 'scan-captures' %}active{% endif %}" href="{% url 'scan-captures' %}">Scan Captures</a>
+            {% endif %}
+            {% if user_perms.schedules.read %}
+            <a class="dropdown-item {% if mgmt_page == 'recompute-log' %}active{% endif %}" href="{% url 'recompute-log' %}" >Recompute Log</a>
+            {% endif %}
+          </div>
+        </li>
+      {% endwith %}
+    {% endif %}
+
+    {# ── Approvals ───────────────────────────────────────── #}
+    {% if user_perms.approvals_overtime.read or user_perms.approvals_undertime.read or user_perms.approvals_halfday.read or user_perms.approvals_leaves.read or user_perms.approvals_missing_logs.read %}
+      {% with approval_page=request.resolver_match.url_name %}
+        <li class="nav-item dropdown {% if approval_page == 'ot_decision' or approval_page == 'ut_decision' or approval_page == 'hd_decision' or approval_page == 'lv-decision' or approval_page == 'missing-logs' %}active show{% endif %}">
+          <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="false">
+            <span class="nav-link-icon d-md-none d-lg-inline-block">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path d="M9 11l3 3l8 -8"/><path d="M20 12v6a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h9"/>
+              </svg>
+            </span>
+            <span class="nav-link-title">Approvals</span>
+          </a>
+          <div class="dropdown-menu {% if approval_page == 'ot_decision' or approval_page == 'ut_decision' or approval_page == 'hd_decision' or approval_page == 'lv-decision' or approval_page == 'missing-logs' %}show{% endif %}">
+            {% if user_perms.approvals_overtime.read %}
+            <a class="dropdown-item {% if approval_page == 'ot_decision' %}active{% endif %}" href="{% url 'ot_decision' %}">Overtime</a>
+            {% endif %}
+            {% comment %} {% if user_perms.approvals_undertime.read %}
+            <a class="dropdown-item {% if approval_page == 'ut_decision' %}active{% endif %}" href="{% url 'ut_decision' %}">Undertime</a>
+            {% endif %}
+            {% if user_perms.approvals_halfday.read %}
+            <a class="dropdown-item {% if approval_page == 'hd_decision' %}active{% endif %}" href="{% url 'hd_decision' %}">Half Days</a>
+            {% endif %}
+            {% if user_perms.approvals_leaves.read %}
+            <a class="dropdown-item {% if approval_page == 'lv-decision' %}active{% endif %}" href="{% url 'lv-decision' %}">Leaves</a>
+            {% endif %}
+            {% if user_perms.approvals_missing_logs.read %}
+            <a class="dropdown-item {% if approval_page == 'missing-logs' %}active{% endif %}" href="{% url 'missing-logs' %}">Missing Logs</a>
+            {% endif %} {% endcomment %}
+          </div>
+        </li>
+      {% endwith %}
+    {% endif %}
+
+    {# ── Reports ─────────────────────────────────────────── #}
+    {% if user_perms.reports_timesheet_total.read or user_perms.reports_timesheet_actual.read %}
+      {% with reports_page=request.resolver_match.url_name %}
+        <li class="nav-item dropdown {% if reports_page == 'timesheet-report' or reports_page == 'timesheet-actual-report' %}active show{% endif %}">
+          <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="false">
+            <span class="nav-link-icon d-md-none d-lg-inline-block">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path d="M9.615 20h-2.615a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v8"/>
+                <path d="M14 19l2 2l4 -4"/><path d="M9 8h4"/><path d="M9 12h2"/>
+              </svg>
+            </span>
+            <span class="nav-link-title">Timesheet Reports</span>
+          </a>
+          <div class="dropdown-menu {% if reports_page == 'timesheet-report' or reports_page == 'timesheet-actual-report' %}show{% endif %}">
+            {% if user_perms.reports_timesheet_total.read %}
+            <a class="dropdown-item {% if reports_page == 'timesheet-report' %}active{% endif %}" href="{% url 'timesheet-report' %}">Credited &amp; Overtime Hrs</a>
+            {% endif %}
+            {% if user_perms.reports_timesheet_actual.read %}
+            <a class="dropdown-item {% if reports_page == 'timesheet-actual-report' %}active{% endif %}" href="{% url 'timesheet-actual-report' %}">Total Actual Hrs</a>
+            {% endif %}
+          </div>
+        </li>
+      {% endwith %}
+    {% endif %}
+
+    {# ── Settings ────────────────────────────────────────── #}
+    {% if user_perms.settings_departments.read or user_perms.settings_positions.read or user_perms.settings_employee_groups.read or user_perms.settings_manual_attendance.read or user_perms.settings_smart_manual_attendance.read or user_perms.settings_personal_rest_days.read or user_perms.settings_roles.read or user_perms.settings_system_users.read %}
+      {% with settings_page=request.resolver_match.url_name %}
+        <li class="nav-item dropdown {% if settings_page == 'department-list' or settings_page == 'position-list' or settings_page == 'group-list' or settings_page == 'manual-attendance' or settings_page == 'scan-upload' or settings_page == 'rest-days-manage' or settings_page == 'database-sync' or settings_page == 'role-list' or settings_page == 'system-users' %}active show{% endif %}">
+          <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="false">
+            <span class="nav-link-icon d-md-none d-lg-inline-block">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065"/>
+                <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/>
+              </svg>
+            </span>
+            <span class="nav-link-title">Settings</span>
+          </a>
+          <div class="dropdown-menu {% if settings_page == 'department-list' or settings_page == 'position-list' or settings_page == 'group-list' or settings_page == 'manual-attendance' or settings_page == 'scan-upload' or settings_page == 'rest-days-manage' or settings_page == 'database-sync' or settings_page == 'role-list' or settings_page == 'system-users' %}show{% endif %}">
+            {% if user_perms.settings_departments.read %}
+            <a class="dropdown-item {% if settings_page == 'department-list' %}active{% endif %}" href="{% url 'department-list' %}">Departments</a>
+            {% endif %}
+            {% if user_perms.settings_positions.read %}
+            <a class="dropdown-item {% if settings_page == 'position-list' %}active{% endif %}" href="{% url 'position-list' %}">Dept. Positions</a>
+            {% endif %}
+            {% if user_perms.settings_employee_groups.read %}
+            <a class="dropdown-item {% if settings_page == 'group-list' %}active{% endif %}" href="{% url 'group-list' %}">Employee Groups</a>
+            {% endif %}
+            {% if user_perms.settings_manual_attendance.read %}
+            <a class="dropdown-item {% if settings_page == 'manual-attendance' %}active{% endif %}" href="{% url 'manual-attendance' %}">Manual Attendance</a>
+            {% endif %}
+            {% comment %} {% if user_perms.settings_smart_manual_attendance.read %}
+            <a class="dropdown-item {% if settings_page == 'scan-upload' %}active{% endif %}" href="{% url 'scan-upload' %}">Smart Manual Attendance</a>
+            {% endif %}
+            {% comment %} {% if user_perms.settings_personal_rest_days.read %}
+            <a class="dropdown-item {% if settings_page == 'rest-days-manage' %}active{% endif %}" href="{% url 'rest-days-manage' %}">Personal Rest Days</a>
+            {% endif %} {% endcomment %}
+            {% if user_perms.settings_system_users.read %}
+            <a class="dropdown-item {% if settings_page == 'database-sync' %}active{% endif %}" href="{% url 'database-sync' %}">Database Sync</a>
+            {% endif %}
+            {% if user_perms.settings_roles.read %}
+            <a class="dropdown-item {% if settings_page == 'role-list' %}active{% endif %}" href="{% url 'role-list' %}">Roles</a>
+            {% endif %}
+            {% if user_perms.settings_system_users.read %}
+            <a class="dropdown-item {% if settings_page == 'system-users' %}active{% endif %}" href="{% url 'system-users' %}">System Users</a>
+            {% endif %}
+          </div>
+        </li>
+      {% endwith %}
+    {% endif %}
+
+    {# ── User Footer ─────────────────────────────────────── #}
+    <li class="nav-item mt-auto d-none d-lg-block pt-3 mb-3">
+      <div class="dropdown border-top pt-3">
+        <a href="#" class="nav-link d-flex align-items-center gap-2 px-2 py-1 rounded" data-bs-toggle="dropdown">
+          <span class="avatar avatar-sm">{{ user.first_name|first }}{{ user.last_name|first }}</span>
+          <div class="d-none d-xl-flex flex-fill flex-column" style="min-width:0;">
+            <div class="text-truncate fw-medium small">{{ user.first_name }} {{ user.last_name }}</div>
+            <div class="text-secondary" style="font-size:11px;">
+              {% if user.role %}{{ user.role.name }}{% else %}---{% endif %}
+            </div>
+          </div>
+          <i class="ti ti-dots-vertical text-secondary ms-auto"></i>
+        </a>
+        <div class="dropdown-menu dropdown-menu-end">
+          <a href="{% url 'change-password' %}" class="dropdown-item">Change Password</a>
+          <div class="dropdown-divider"></div>
+          <a href="{% url 'logout' %}" class="dropdown-item text-danger">Logout</a>
+        </div>
+      </div>
+    </li>
+
+  {% endif %}
+
+</ul>
