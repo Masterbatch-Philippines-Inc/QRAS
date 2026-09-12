@@ -1,0 +1,309 @@
+/* Figtree Font */
+
+@font-face {
+  font-family: 'Figtree';
+  src: url('../fonts/figtree/Figtree-Regular.woff') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Figtree';
+  src: url('../fonts/figtree/Figtree-Medium.woff') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Figtree';
+  src: url('../fonts/figtree/Figtree-Bold.woff') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+/* Roboto Font */
+
+@font-face {
+  font-family: 'Roboto';
+  src: url('../fonts/roboto/Roboto-Regular.woff') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Roboto';
+  src: url('../fonts/roboto/Roboto-Medium.woff') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Roboto';
+  src: url('../fonts/roboto/Roboto-Bold.woff') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+/* Global */
+
+:root {
+  --tblr-border-radius: 10px !important;
+  --tblr-border-radius-sm: 6px !important;
+  --tblr-border-radius-lg: 14px !important;
+  --tblr-border-radius-pill: 9995px !important;
+}
+
+* {
+   font-family: 'Roboto', sans-serif !important;
+}
+
+#sidebar-menu {
+  display: flex;
+  flex-direction: column;
+  height: 100vh; /* full screen height */
+}
+
+#reader__dashboard {
+  display: block;
+}
+
+.fw-100 {
+  font-weight: 100;
+}
+
+.fw-400 {
+  font-weight: 400;
+}
+
+.fw-500 {
+  font-weight: 500;
+}
+
+/* FOR SCROLL UP BTN */
+
+#scrollTopBtn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 999;
+
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s linear;
+}
+
+/* FOR TABLES */
+
+.employee-row:hover,
+.attendance-logs-row:hover,
+.attendance-row:hover {
+  background-color: rgba(6,111,209, 0.1);
+  cursor: pointer;
+}
+
+.impose-no-display { display: none !important; }
+
+/* FOR QR BIG CLOCK CARD */
+
+.shot-digit {
+  color: #066fd1;
+  font-size: 2.4rem;
+  font-weight: 700;
+  width: 2.8rem;
+  height: 3.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.shot-sep {
+  color: #066fd1;
+  font-size: 2rem;
+  font-weight: 700;
+  padding: 0 2px;
+  opacity: 0.7;
+  animation: blink 1s step-start infinite;
+}
+
+.shot-ampm {
+  color: #066fd1;
+  font-size: 1rem;
+  font-weight: 700;
+  align-self: flex-end;
+  padding-bottom: 9px;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.1; }
+}
+
+/* QR */
+
+#reader {
+  width: 100% !important;
+  min-height: 300px;
+}
+
+#reader>div {
+  z-index: 2 !important;
+}
+
+#reader video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+  transform: scaleX(1) !important;
+}
+
+/* TOM SELECT */
+
+.ts-wrapper.form-select {
+  padding: 0;
+}
+
+/* Actual control */
+.ts-control {
+  background: var(--tblr-bg-forms) !important;
+  border: 1px solid var(--tblr-border-color) !important;
+  color: var(--tblr-body-color);
+  min-height: calc(2.25rem + 2px);
+  border-radius: var(--tblr-border-radius);
+  padding-right: 2.5rem !important; /* keep room for arrow */
+}
+
+/* Keep dropdown arrow visible */
+.ts-wrapper.single .ts-control:after,
+.ts-wrapper.multi .ts-control:after {
+  border-color: #6c7a91 transparent transparent transparent;
+}
+
+/* Input text */
+.ts-control input {
+  color: var(--tblr-body-color) !important;
+}
+
+/* Dropdown menu */
+.ts-dropdown {
+  background: var(--tblr-bg-surface) !important;
+  border: 1px solid var(--tblr-border-color) !important;
+  border-radius: var(--tblr-border-radius);
+  box-shadow: var(--tblr-box-shadow);
+  overflow: hidden;
+}
+
+/* Options */
+.ts-dropdown .option {
+  background: var(--tblr-bg-surface) !important;
+  color: var(--tblr-body-color) !important;
+  padding: 0.5rem 0.75rem;
+}
+
+/* Hovered / active option */
+.ts-dropdown .option.active,
+.ts-dropdown .option:hover {
+  background: var(--tblr-primary-lt) !important;
+  color: var(--tblr-primary) !important;
+}
+
+/* Selected tags */
+.ts-control .item {
+  background: var(--tblr-primary-lt);
+  color: var(--tblr-primary);
+  border-radius: 4px;
+}
+
+/* Focus state */
+.ts-wrapper.focus .ts-control {
+  border-color: var(--tblr-primary) !important;
+  box-shadow: 0 0 0 .25rem rgba(var(--tblr-primary-rgb), .25);
+}
+
+/* Remove tag/pill appearance */
+.ts-control .item {
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+  color: var(--tblr-body-color) !important;
+}
+
+/* Remove x button spacing */
+.ts-control .remove {
+  display: none !important;
+}
+
+/* Shepherd.js - Tutorial Styling */
+.shepherd-content {
+  border-radius: var(--tblr-border-radius);
+  outline: none;
+  padding: 0;
+}
+.shepherd-element {
+  border-radius: var(--tblr-border-radius-lg) !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,.12);
+  font-family: 'Figtree', sans-serif;
+  max-width: 320px;
+}
+.shepherd-header {
+  border-radius: 0 0 14px 14px !important;
+  background-color: #e6e7e9 !important;
+  border-bottom: 1px solid #e6e7e9;
+  border-radius: 14px 14px 0 0 !important;
+  padding: .75rem 1rem;
+}
+.shepherd-title {
+  font-size: .9rem;
+  font-weight: auto;
+  color: #1d273b;
+}
+.shepherd-text {
+  background-color: #e6e7e9 !important;
+  padding: .85rem 1rem;
+  font-size: .845rem;
+  color: #4b5563;
+  line-height: 1.55;
+}
+.shepherd-footer {
+  border-radius: 0 0 14px 14px !important;
+  background-color: #e6e7e9 !important;
+  border-top: 1px solid #e6e7e9;
+  display: flex;
+  gap: .4rem;
+  padding-top: 0.75rem !important;
+}
+.shepherd-cancel-icon {
+  color: #9ca3af !important;
+}
+.shepherd-cancel-icon:hover {
+  color: #1d273b;
+}
+.shepherd-modal-overlay-container {
+  opacity: 1;
+}
+
+/* Required field label */
+.col-form-label.required::after,
+.form-label.required::after {
+  content: "* REQUIRED";
+  font-size: 0.65em;
+  vertical-align: super;
+  margin-left: 0.25rem;
+  color: #d63939;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+/* iMask inputs — typed text uses normal color */
+input[data-mask] {
+  color: var(--tblr-body-color);
+}
+
+.row-flash {
+  animation: rowFlash 2s ease forwards;
+}
+@keyframes rowFlash {
+  0%   { background: rgba(var(--tblr-success-rgb), 0.15); }
+  100% { background: transparent; }
+}
