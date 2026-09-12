@@ -1,0 +1,388 @@
+{% comment %} {% extends 'base.html' %}
+{% load static %}
+{% block content %}
+    <div class="page-wrapper">
+      <div class="container-xl mt-5">
+        <!-- ─── Dashboard Headers ─── -->
+        <div class="col d-flex align-items-start justify-content-between" style="margin: 10px 0 1.15rem 0;">
+          <div id="dashboard-header" data-name="{{ user.first_name|escapejs }}">
+            <h2 class="page-title" id="dashboard-greeting"></h2>
+            <div class="page-pretitle" id="dashboard-pretitle" style="font-size: .725rem;"></div>
+          </div>
+          <button id="dashboard-btn-help-tour" class="btn btn-sm btn-ghost-secondary" title="Dashboard page tour">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            &nbsp;Need Help
+          </button>
+        </div>
+        <!-- ─── Summary Cards ─── -->
+        <div class="row g-3 mb-4">
+          <!-- UNDERTIME -->
+          <div class="col-md-4" id="card-undertime">
+            <div class="card">
+              <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                  <span class="badge bg-yellow-lt me-2">UT</span>
+                  <span class="fw-bold">Undertime</span>
+                </div>
+                <div class="d-flex align-items-end justify-content-between">
+                  <div>
+                    <div style="font-size:2.25rem; font-weight:700; line-height:1;">{{ ut_count }}</div>
+                    <div class="text-secondary">attendance logs with undertime</div>
+                  </div>
+                  <a href="{% url 'attendance-records' %}?filter=Undertime" class="btn btn-sm btn-yellow">
+                    Review
+                    <svg xmlns="http://www.w3.org/2000/svg" class="ms-1" width="14" height="14" viewBox="0 0 24 24"
+                      fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                    </svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- OVERTIME -->
+          <div class="col-md-4" id="card-overtime">
+            <div class="card">
+              <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                  <span class="badge bg-blue-lt me-2">OT</span>
+                  <span class="fw-bold">Overtime</span>
+                </div>
+                <div class="d-flex align-items-end justify-content-between">
+                  <div>
+                    <div style="font-size:2.25rem; font-weight:700; line-height:1;">{{ ot_count }}</div>
+                    <div class="text-secondary">attendance logs with overtime</div>
+                  </div>
+                  <a href="{% url 'attendance-records' %}?filter=Overtime" class="btn btn-sm btn-blue">
+                    Review
+                    <svg xmlns="http://www.w3.org/2000/svg" class="ms-1" width="14" height="14" viewBox="0 0 24 24"
+                      fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                    </svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- HALFDAY -->
+          <div class="col-md-4" id="card-halfday">
+            <div class="card">
+              <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                  <span class="badge bg-purple-lt me-2">HD</span>
+                  <span class="fw-bold">Halfday</span>
+                </div>
+                <div class="d-flex align-items-end justify-content-between">
+                  <div>
+                    <div style="font-size:2.25rem; font-weight:700; line-height:1;">{{ hd_count }}</div>
+                    <div class="text-secondary">attendance logs with halfday</div>
+                  </div>
+                  <a href="{% url 'attendance-records' %}?filter=Half-day" class="btn btn-sm btn-purple">
+                    Review
+                    <svg xmlns="http://www.w3.org/2000/svg" class="ms-1" width="14" height="14" viewBox="0 0 24 24"
+                      fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                    </svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- UNSCHED -->
+          <div class="col-md-4" id="card-unscheduled">
+            <div class="card">
+              <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                  <span class="badge bg-red-lt text-pink me-2">UN</span>
+                  <span class="fw-bold">Unscheduled</span>
+                </div>
+                <div class="d-flex align-items-end justify-content-between">
+                  <div>
+                    <div style="font-size:2.25rem; font-weight:700; line-height:1;">{{ ns_count }}</div>
+                    <div class="text-secondary">employees without a schedule</div>
+                  </div>
+                  <a href="{% url 'unscheduled-list' %}" class="btn btn-sm btn-pink">
+                    Review
+                    <svg xmlns="http://www.w3.org/2000/svg" class="ms-1" width="14" height="14" viewBox="0 0 24 24"
+                      fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                    </svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- ML -->
+          <div class="col-md-4" id="card-ml">
+            <div class="card">
+              <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                  <span class="badge bg-orange-lt me-2">ML</span>
+                  <span class="fw-bold">Missing Logs</span>
+                </div>
+                <div class="d-flex align-items-end justify-content-between">
+                  <div>
+                    <div style="font-size:2.25rem; font-weight:700; line-height:1;">{{ ml_count }}</div>
+                    <div class="text-secondary">incomplete attendance records</div>
+                  </div>
+                  <a href="{% url 'attendance-records' %}?filter=Missing+Logs" class="btn btn-sm btn-orange">
+                    Review
+                    <svg xmlns="http://www.w3.org/2000/svg" class="ms-1" width="14" height="14" viewBox="0 0 24 24"
+                      fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                    </svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- TODAY -->
+          <div class="col-md-4" id="card-today">
+            <div class="card">
+              <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                  <span class="badge bg-green-lt text-green me-2">TD</span>
+                  <span class="fw-bold">Today's Logs</span>
+                </div>
+                <div class="d-flex align-items-end justify-content-between">
+                  <div>
+                    <div style="font-size:2.25rem; font-weight:700; line-height:1;">{{ today_count }}</div>
+                    <div class="text-secondary">employees clocked in today</div>
+                  </div>
+                  <a href="{% url 'attendance-records' %}?filter={{ today_display }}" class="btn btn-sm btn-green">
+                    Review
+                    <svg xmlns="http://www.w3.org/2000/svg" class="ms-1" width="14" height="14" viewBox="0 0 24 24"
+                      fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                    </svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="row mb-4">
+          <div class="col-md-5">
+            <!-- ─── Overtime Pending Tiers ─── -->
+            <div class="card mb-4" id="card-ot-pending">
+              <div class="card-header">
+                <div class="col">
+                  <h3 class="card-title mb-0">Overtime Pending Approval</h3>
+                  <p class="text-secondary m-0" style="font-size:13px;">Grouped by how long they have been waiting.</p>
+                </div>
+                <div class="col-auto ms-auto">
+                  <a href="{% url 'ot_decision' %}" class="btn btn-sm btn-outline-primary">
+                    View All
+                    <svg xmlns="http://www.w3.org/2000/svg" class="ms-1" width="14" height="14" viewBox="0 0 24 24"
+                      fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                    </svg>
+                  </a>
+                </div>
+              </div>
+              <div class="card-body p-0">
+                {% with tiers=ot_pending_tiers %}
+
+                {% for key, tier in tiers.items %}
+                <div class="d-flex align-items-start gap-3 px-4 py-3 {% if not forloop.last %}border-bottom{% endif %}">
+
+                  <!-- Urgency dot + label -->
+                  <div class="d-flex flex-column align-items-center pt-1" style="min-width: 72px;">
+                    <span class="badge bg-{{ tier.color }}-lt text-{{ tier.color }} fw-bold mb-1" style="font-size: 0.7rem; letter-spacing: 0.04em;">
+                      {{ tier.days }}
+                    </span>
+                    <span class="text-secondary" style="font-size: 0.7rem;">{{ tier.label }}</span>
+                  </div>
+
+                  <!-- Divider -->
+                  <div class="border-start mx-1" style="min-height: 48px;"></div>
+
+                  <!-- Count + hours -->
+                  <div class="d-flex flex-column justify-content-center" style="min-width: 80px;">
+                    {% if tier.count > 0 %}
+                      <span class="fw-bold text-{{ tier.color }}" style="font-size: 1.5rem; line-height: 1;">{{ tier.count }}</span>
+                      <span class="text-secondary" style="font-size: 0.75rem;">
+                        record{{ tier.count|pluralize }}
+                      </span>
+                    {% else %}
+                      <span class="fw-bold text-secondary" style="font-size: 1.5rem; line-height: 1;">0</span>
+                      <span class="text-secondary" style="font-size: 0.75rem;">no records</span>
+                    {% endif %}
+                  </div>
+
+                  <!-- Employee previews -->
+                  <div class="d-flex flex-wrap align-items-center gap-2 ms-2">
+                    {% if tier.count > 0 %}
+                      {% for name in tier.previews %}
+                        <span class="badge bg-{{ tier.color }}-lt text-{{ tier.color }}" style="font-weight: 500;">
+                          {{ name }}
+                        </span>
+                      {% endfor %}
+                      {% if tier.has_more %}
+                        <span class="text-secondary" style="font-size: 0.75rem;">
+                          +{{ tier.count|add:"-3" }} more
+                        </span>
+                      {% endif %}
+                    {% else %}
+                      <span class="text-secondary" style="font-size: 0.85rem;">All clear for this range.</span>
+                    {% endif %}
+                  </div>
+
+                </div>
+                {% endfor %}
+
+                {% endwith %}
+              </div>
+            </div>
+          </div>
+          <div class="col-md-7">
+            <!-- ─── Recent Decisions ─── -->
+            <div class="card mb-4" id="card-recent-decisions">
+              <div class="card-header">
+                <div class="col">
+                  <h3 class="card-title mb-0">Recent Schedule Activity</h3>
+                  <p class="text-secondary m-0" style="font-size:13px;">Latest schedule assignments and changes.</p>
+                </div>
+                <div class="col-md-auto col-sm-12">
+                  <div class="ms-auto d-flex flex-wrap btn-list">
+                    <div class="input-group input-group-flat w-auto">
+                      <span class="input-group-text">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                          fill="none" stroke="currentColor" stroke-width="2"
+                          stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/>
+                        </svg>
+                      </span>
+                      <input id="dashboard-search-input" type="text" class="form-control" autocomplete="off" placeholder="Search employee…" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-vcenter table-bordered">
+                  <thead>
+                    <tr>
+                      <th>Employee</th>
+                      <th>Activity</th>
+                      <th>Acted At</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for item in recent_activity %}
+                    <tr class="dashboard-row">
+                      <td>
+                        <div class="fw-semibold">
+                          {{ item.employee.last_name }}, {{ item.employee.first_name }}
+                        </div>
+                        <div class="text-secondary" style="font-size:12px;">
+                          {{ item.employee.position|default:"—" }}
+                        </div>
+                      </td>
+                      <td>{{ item.activity }}</td>
+                      <td class="text-secondary">
+                        {{ item.acted_at|date:"M d, Y h:i A" }}
+                      </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                      <td colspan="5" class="text-center text-secondary py-4">
+                        No recent activity yet.
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              <!-- ─── Footer ─── -->
+              <div class="card-footer d-flex align-items-center">
+                <div class="dropdown clzst">
+                  <a class="btn dropdown-toggle" data-bs-toggle="dropdown">
+                    <span id="dashboard-main-page-count" class="me-1">3</span> records
+                  </a>
+                  <div class="dropdown-menu">
+                    <a class="dropdown-item" onclick="setPageSize(3)">3 records</a>
+                    <a class="dropdown-item" onclick="setPageSize(10)">10 records</a>
+                    <a class="dropdown-item" onclick="setPageSize(20)">20 records</a>
+                    <a class="dropdown-item" onclick="setPageSize(40)">40 records</a>
+                  </div>
+                </div>
+                <ul class="pagination m-0 ms-auto" id="dashboard-pagination"></ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="{% static 'js/dashboard/greet.js' %}"></script>
+    <script>
+      initTableController({
+        searchId:    'dashboard-search-input',
+        pageCountId: 'dashboard-main-page-count',
+        paginId:     'dashboard-pagination',
+        rowSelector: '.dashboard-row',
+        defaultSize: 3,
+        setFnName:   'setPageSize',
+      });
+    </script>
+    <script src="{% static 'js/tours/dashboard.js' %}"></script>
+    <script>
+      (function () {
+          const since = new Date().toISOString();
+          const url   = `/sse/attendance/?since=${encodeURIComponent(since)}`;
+          const es    = new EventSource(url);
+
+          function getCardEl(cardId) {
+              return document.querySelector(`#${cardId} [style*="2.25rem"]`);
+          }
+
+          function pulseCard(cardId, color) {
+              const card = document.querySelector(`#${cardId} .card`);
+              if (!card) return;
+              card.style.transition = 'box-shadow 0.3s';
+              card.style.boxShadow  = `0 0 0 2px var(--tblr-${color})`;
+              setTimeout(() => { card.style.boxShadow = ''; }, 2000);
+          }
+
+          function updateCard(cardId, newVal, color) {
+              const el = getCardEl(cardId);
+              if (!el) return;
+              const old = parseInt(el.textContent, 10) || 0;
+              if (newVal !== old) {
+                  el.textContent = newVal;
+                  pulseCard(cardId, color);
+              }
+          }
+
+          es.onmessage = function (e) {
+              const data = JSON.parse(e.data);
+              updateCard('card-today',       data.today_count, 'green');
+              updateCard('card-undertime',   data.ut_count,    'yellow');
+              updateCard('card-overtime',    data.ot_count,    'blue');
+              updateCard('card-halfday',     data.hd_count,    'purple');
+              updateCard('card-ml',          data.ml_count,    'orange');
+              updateCard('card-unscheduled', data.ns_count,    'pink');
+          };
+
+          // Browser auto-reconnects on error — no action needed
+          let sseErrors = 0;
+          es.onerror = function () {
+              sseErrors++;
+              if (sseErrors > 10) {
+                  es.close();
+                  console.warn('[SSE] Too many errors, connection closed.');
+              }
+          };
+      })();
+    </script>
+{% endblock %} {% endcomment %}
+
+{% block content %}
+
+<h1>Dashboard</h1>
+<p>Welcome, {{ user.username }}!</p>
+<a href="{% url 'logout' %}">Logout</a>
+
+{% endblock %}
