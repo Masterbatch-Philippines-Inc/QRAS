@@ -53,7 +53,7 @@ def login_view(request):
       if user is not None:
           login(request, user)
           return redirect("dashboard")
-      return render(request, "login.html", {
+      return render(request, "pages/auth/login.django", {
           "error": "Invalid username or password."
       })
   return render(request, "pages/auth/login.django")
@@ -64,4 +64,4 @@ def logout_view(request):
 
 @login_required
 def dashboard_view(request):
-  return render(request, "pages/dashboard/dashboard.django")
+  return render(request, "pages/dashboard.django")

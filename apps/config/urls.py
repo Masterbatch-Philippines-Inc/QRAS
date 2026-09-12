@@ -24,10 +24,10 @@ urlpatterns = [
     path('', include('apps.qras.urls')),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# if settings.DEBUG:
+#     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
-handler401 = 'handlers.views.error_401'
-handler403 = 'handlers.views.error_403'
-handler404 = 'handlers.views.error_404'
-handler500 = 'handlers.views.error_500'
+# handler401 = 'handlers.views.error_401'
+# handler403 = 'handlers.views.error_403'
+# handler404 = 'handlers.views.error_404'
+# handler500 = 'handlers.views.error_500'
