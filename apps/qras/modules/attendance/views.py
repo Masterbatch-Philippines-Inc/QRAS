@@ -9,28 +9,28 @@ from django.views import View
 from django.shortcuts import render
 from django.db.models import Max, Count, Q
 
-from qras.models.employee import (
+from apps.qras.models.employee import (
     Employee, 
     EmployeeRestDay
 )
-from qras.models.attendance import (
+from apps.qras.models.attendance import (
     Attendance,
     AttendanceStatus,
     AttendanceLog,
     AttendanceLogAudit,
     MissingLog
 )
-from qras.modules.attendance.helpers import (
+from apps.qras.modules.attendance.helpers import (
     format_hours_to_text, 
     resolve_display_status,
     check_duplicate_log, 
     record_attendance, 
 )
-from qras.modules.auth.decorators import (
+from apps.qras.modules.auth.decorators import (
     role_required,
     permission_required
 )
-from qras.modules.auth.helpers import (
+from apps.qras.modules.auth.helpers import (
     get_dept_queryset_filter,
     get_self_exclude
 )

@@ -1,21 +1,15 @@
-"""
-    * Fixed 60-minute break
-    * Not configurable
-"""
 BREAK_HOURS = 1.0 
-
 
 from django.db import models
 from datetime import timedelta, datetime, date
 from django.conf import settings
-from qras.models.employee import Employee
-from qras.models.management import ShiftSchedule
+from apps.qras.models.employee import Employee
 
 
 class ScheduleRecomputeEvent(models.Model):
     employee          = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='recompute_events')
-    old_schedule      = models.ForeignKey(ShiftSchedule, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
-    new_schedule      = models.ForeignKey(ShiftSchedule, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    old_schedule      = models.ForeignKey('ShiftSchedule', on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    new_schedule      = models.ForeignKey('ShiftSchedule', on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
     recomputed_by     = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     recomputed_at     = models.DateTimeField(auto_now_add=True)
     scope_description = models.CharField(max_length=100)  # e.g. "all", "single_date: 2026-03-01", "date_range: 2026-03-01 to 2026-03-15"

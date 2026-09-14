@@ -29,7 +29,7 @@ def dashboard_view(request):
     return render(request, "pages/dashboard.django")
 
 
-from .view.attendance import (
+from .modules.attendance.views import (
     AttendanceRecordView,
     EmployeeAttendanceLogsView,
     ManualAttendanceView,
@@ -38,10 +38,10 @@ from .view.attendance import (
     MissingLogView,
     ManualOverwriteAttendanceView,
 )
-from .view.dashboard import (
+from .modules.dashboard.views import (
     Dashboard
 )
-from .view.request import (
+from .modules.request.views import (
     OTFilingView,
     OTLogsView,
     OTDecisionView,
@@ -52,12 +52,12 @@ from .view.request import (
     LeaveComputeDaysView
 )
 
-from .modules.attendance.views.scan_upload import (
+from .modules.attendance.scan_upload import (
     ScanUploadView,
     ScanUploadParseView,
     ScanUploadSaveView,
 )
 
-from .modules.attendance.views.live_updates import (
+from .modules.attendance.live_updates import (
     AttendanceLiveUpdateView
 )
