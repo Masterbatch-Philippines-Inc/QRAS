@@ -132,9 +132,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
-# STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-# STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
-# STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 
 # Default page/gateway (Login, etc.) redirect URL after login
@@ -146,7 +146,7 @@ LOGIN_REDIRECT_URL = 'scanner'
 
 # Media files (Uploaded files)
 # https://docs.djangoproject.com/en/6.1/topics/files/
-MEDIA_URL = '/media/'
+MEDIA_URL = 'apps/qras/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 
@@ -186,7 +186,7 @@ CACHES = {
 }
 
 # Initialized role name
-ADMIN_ROLE_NAME = config('ADMIN_ROLE_NAME')
+ADMIN_ROLE_NAME = config('ADMIN_ROLE_NAME', default='Administrator')
 
 # Loggers
 LOGGING = {

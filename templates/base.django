@@ -8,7 +8,7 @@
     <title>QRAS - Masterbatch Philippines Inc.</title>
     <link rel="icon" href="{% static 'img/ico_primary.svg' %}" type="image/svg+xml" media="(prefers-color-scheme: light)">
     <link rel="icon" href="{% static 'img/ico_white.svg' %}" type="image/svg+xml" media="(prefers-color-scheme: dark)">
-    <link rel="stylesheet" href="{% static 'css/tabler.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/libraries/tabler.css' %}" />
     <link rel="stylesheet" href="{% static 'css/qras.css' %}" />
     <link rel="stylesheet" href="{% static 'css/libraries/tom_select.css' %}" />
     <link rel="stylesheet" href="{% static 'css/libraries/daterangepicker.css' %}" />
@@ -25,13 +25,12 @@
     {% comment %} {% include 'components/global/modal.django' %}
     {% include 'components/shared/toast.django' %}
     {% include 'components/shared/toast_modal.django' %} {% endcomment %}
-    {% if user.is_authenticated %}
+    {% comment %} {% if user.is_authenticated %} {% endcomment %}
     <main class="page">
-      {% comment %} {% block content %}{% endblock %} {% endcomment %}
-      <h1>Hello Test from base.django</h1>
+      {% block content %}{% endblock %}
       {% include 'components/global/footer.django' %}
     </main>
-    {% endif %}
+    {% comment %} {% endif %} {% endcomment %}
     {% include 'components/shared/scroller.django' %}
     {% comment %} <script>window.CLOCK_OFFSET_MINUTES = {{ CLOCK_OFFSET_MINUTES }};</script> {% endcomment %}
     <script src="{% static 'js/libraries/imask.js' %}"></script>
@@ -41,8 +40,11 @@
     <script src="{% static 'js/components/shared/scroller.js' %}"></script>
     <script src="{% static 'js/components/pages/input/clock.js' %}"></script>
     <script src="{% static 'js/components/pages/features/date_time.js' %}"></script>
-    <script src="{% static 'static\js\components\pages\authentications\pass_eye.js' %}"></script>
-    <script type="module">import Shepherd from "{% static 'js/libraries/shepherd.js' %}";window.Shepherd = Shepherd;</script>
+    <script src="{% static 'js/components/pages/authentications/pass_eye.js' %}"></script>
+    <script type="module">
+      import Shepherd from "{% static 'js/libraries/shepherd.js' %}";
+      window.Shepherd = Shepherd;
+    </script>
     <script src="{% static 'js/libraries/shepherd.js' %}"></script>
     {% comment %} {% block scripts %}{% endblock %} {% endcomment %}
   </body>

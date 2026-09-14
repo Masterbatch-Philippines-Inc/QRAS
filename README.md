@@ -10,7 +10,7 @@
 <br/>
 
 
-## 1. Setup and Installation
+## Setup and Installation
 
 ### Requirements
 - Python 3.12+
@@ -19,38 +19,57 @@
 
 ### Installation Steps
 
+#### 1. Clone the repo
 ```bash
-# 1. Clone the repo
 git clone https://github.com/Masterbatch-Philippines-Inc/QRAS.git
-
-# 2. Create and activate virtual environment
-un venv
-
-# 2. Create and activate virtual environment
+```
+#### 2. Create and activate virtual environment
+```bash
+uv venv
+```
+```bash
 .venv\Scripts\activate
-
-# 3. Install dependencies
+```
+#### 3. Install dependencies
+```bash
 uv pip install -r requirements.txt
-
-# 4. Hover to the core app
+```
+#### 4. Create new copy of `.env` file
+```bash
 copy .env.example .env
-
-# 5. Set up environment variables
-# Create a .env file and set:
+```
+#### 5. Setup vars in `.env` file
+```bash
 notepad .env
+```
+#### 6. Regenerate database tables
+```bash
+py manage.py makemigrations qras
+```
 
-# 6. Regenerate migration files fresh for every app
-python manage.py makemigrations qras
+> [!Important]
+> Create database in psql first before migrating models.
 
-# 7. Apply them to the database
-python manage.py migrate
+#### 7. Apply migrations
+```bash
+py manage.py migrate
+```
+#### 8. Create new user via Django
+```bash
+py manage.py createsuperuser
+```
+#### 9. Run and test the program
+```bash
+py manage.py runserver
+```
 
-# Extras
+### Extras
 
-# Generate random secret key via python
-python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
-
-# Check python bit
-python -c "import struct; print(struct.calcsize('P')*8)"
-
+#### 1. Generate random secret key via python
+```bash
+py -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+```
+#### 2. Check python bit
+```bash
+py -c "import struct; print(struct.calcsize('P')*8)"
 ```

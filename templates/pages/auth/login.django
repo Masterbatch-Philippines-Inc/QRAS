@@ -1,19 +1,50 @@
-
+{% extends "base.django" %}
+{% load static %}
 {% block content %}
-
-<h2>Login</h2>
-
-<form method="POST">
-    {% csrf_token %}
-
-    <input type="text" name="username" placeholder="Username">
-    <input type="password" name="password" placeholder="Password">
-
-    <button type="submit">Login</button>
-</form>
-
-{% if error %}
-    <p>{{ error }}</p>
-{% endif %}
-
+  <div class="page-wrapper page-center">
+    <div class="container container-tight py-4">
+      <div class="card card-md">
+        <div class="card-body">
+          <div class="text-center">
+            <a href="." aria-label="Tabler" class="navbar-brand navbar-brand-autodark">
+              <svg fill="#000000" style="--tblr-icon-size: 2rem;color: var(--tblr-primary, #066fd1)" viewBox="0 0 24 24" id="qr-code-scan" data-name="Flat Color" xmlns="http://www.w3.org/2000/svg" class="icon flat-color" transform="rotate(45)">
+                <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                <g id="SVGRepo_iconCarrier">
+                  <path id="secondary" d="M12,13v4a1,1,0,0,1-1,1H7a1,1,0,0,1-1-1V13a1,1,0,0,1,1-1h4A1,1,0,0,1,12,13ZM7,10H9a1,1,0,0,0,1-1V7A1,1,0,0,0,9,6H7A1,1,0,0,0,6,7V9A1,1,0,0,0,7,10Zm10,4H15a1,1,0,0,0-1,1v2a1,1,0,0,0,1,1h2a1,1,0,0,0,1-1V15A1,1,0,0,0,17,14Zm0-8H13a1,1,0,0,0-1,1v4a1,1,0,0,0,1,1h4a1,1,0,0,0,1-1V7A1,1,0,0,0,17,6Z" style="fill: #066fd1;"></path>
+                  <path id="primary" d="M21,9a1,1,0,0,1-1-1V4H16a1,1,0,0,1,0-2h4a2,2,0,0,1,2,2V8A1,1,0,0,1,21,9Zm1,11V16a1,1,0,0,0-2,0v4H16a1,1,0,0,0,0,2h4A2,2,0,0,0,22,20ZM4,8V4H8A1,1,0,0,0,8,2H4A2,2,0,0,0,2,4V8A1,1,0,0,0,4,8ZM9,21a1,1,0,0,0-1-1H4V16a1,1,0,0,0-2,0v4a2,2,0,0,0,2,2H8A1,1,0,0,0,9,21Z" style="fill: #066fd1;"></path>
+                </g>
+              </svg>
+            </a>
+          </div>
+          <div class="text-center mb-1">
+            <a href="." aria-label="Tabler" class="navbar-brand navbar-brand-autodark">
+              <h1 class="mb-0">QRAS</h1>
+            </a>
+          </div>
+          <p class="text-center mb-4">Use your account credentials to continue.</p>
+          <form method="POST" autocomplete="off" novalidate="">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label">Username</label>
+              <input type="text" class="form-control {% if error %}is-invalid{% endif %}" name="username" placeholder="juankarlos" autocomplete="off" />
+              {% if error %}
+                <div class="invalid-feedback">{{ error }}</div>
+              {% endif %}
+            </div>
+            <div class="mb-2">
+              <label class="form-label">Password<span class="form-label-description">{% comment %} <a href="#">I forgot password</a> {% endcomment %}</span></label>
+              <div class="input-group input-group-flat">
+                <input type="password" class="form-control {% if error %}is-invalid{% endif %}" placeholder="********" autocomplete="off" name="password" id="field_new2" />
+                {% comment %} <button type="button" class="btn btn-outline-primary px-2 d-inline-flex align-items-center" onclick="togglePassword('field_new2', 'icon_new2')" tabindex="-1" data-bs-placement="top" data-bs-toggle="tooltip" aria-label="Show/Hide password" data-bs-original-title="Show/Hide password"><span id="icon_new2"></span></button> {% endcomment %}
+              </div>
+            </div>
+            <div class="form-footer">
+              <button type="submit" class="btn btn-primary w-100">Sign in</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
 {% endblock %}
