@@ -6,10 +6,10 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.views import View
 
-from qras.models.employee import (
+from apps.qras.models.employee import (
     Employee
 )
-from qras.models.attendance import (
+from apps.qras.models.attendance import (
     Attendance,
     AttendanceLog,
     AttendanceStatus,
@@ -18,14 +18,14 @@ from qras.models.attendance import (
     UndertimeRequest,
     HalfdayRequest,
 )
-from qras.modules.auth.decorators import (
+from apps.qras.modules.auth.decorators import (
     permission_required
 )
-from qras.modules.auth.helpers import (
+from apps.qras.modules.auth.helpers import (
     get_dept_queryset_filter,
     get_self_exclude
 )
-from qras.modules.attendance.helpers import (
+from apps.qras.modules.attendance.helpers import (
     _get_credited_for_undertime,
     format_hours_to_text,
     _compute_halfday_credited,

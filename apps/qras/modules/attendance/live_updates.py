@@ -5,9 +5,9 @@ from django.utils import timezone
 from django.db.models import Max, Count, Q
 from django.utils.decorators import method_decorator
 
-from app.attendance.models import Attendance, AttendanceStatus, AttendanceLog
-from app.authentication.decorators import permission_required
-from app.authentication.helpers import get_dept_queryset_filter, get_self_exclude
+from apps.qras.models.attendance import Attendance, AttendanceStatus, AttendanceLog
+from apps.qras.modules.auth.decorators import permission_required
+from apps.qras.modules.auth.helpers import get_dept_queryset_filter, get_self_exclude
 
 from datetime import datetime, timezone as dt_timezone
 

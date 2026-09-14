@@ -6,11 +6,11 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.views import View
 
-from qras.models.employee import (
+from apps.qras.models.employee import (
     Employee,
     EmployeeSchedule
 )
-from qras.models.attendance import (
+from apps.qras.models.attendance import (
     Attendance,
     LeaveRequest,
     OvertimeRequest,
@@ -18,13 +18,13 @@ from qras.models.attendance import (
     HalfdayRequest,
     MissingLog
 )
-from qras.models.management import (
+from apps.qras.models.management import (
     ShiftSchedule,
     ScheduleActivityLog
 )
-from qras.modules.attendance.computation import compute_attendance_from_logs
-from qras.modules.auth.decorators import permission_required
-from qras.modules.auth.helpers import get_dept_queryset_filter
+from apps.qras.modules.attendance.computation import compute_attendance_from_logs
+from apps.qras.modules.auth.decorators import permission_required
+from apps.qras.modules.auth.helpers import get_dept_queryset_filter
 
 
 @method_decorator([permission_required('dashboard', 'read')], name='dispatch')

@@ -1,5 +1,5 @@
 from django.urls import path
-# from . import views
+from . import views
 from .modules.attendance.views import *
 from .modules.dashboard.views import *
 from .modules.request.views import *
@@ -7,8 +7,8 @@ from .modules.scanner.views import *
 from .modules.attendance.live_updates import *
 
 urlpatterns = [
-    # path('',                                     views.login_view,                          name='login'),
-    # path('logout/',                              views.logout_view,                         name='logout'),
+    path('',                                     views.login_view,                          name='login'),
+    path('logout/',                              views.logout_view,                         name='logout'),
     path('attendance',                           AttendanceRecordView.as_view(),            name='attendance-records'),
     path('attendance/logs/',                     EmployeeAttendanceLogsView.as_view(),      name='employee-attendance-logs'),
     path('attendance/live-updates/',             AttendanceLiveUpdateView.as_view(),        name='attendance-live-updates'),

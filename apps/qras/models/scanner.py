@@ -1,6 +1,6 @@
 from django.db import models
-from qras.models.employee import Employee
-from qras.models.attendance import AttendanceLog
+from apps.qras.models.employee import Employee
+from apps.qras.models.attendance import AttendanceLog
 from datetime import datetime
 from django.utils import timezone
 

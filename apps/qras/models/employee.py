@@ -1,8 +1,6 @@
 from django.db import models
 from django.conf import settings
-from apps.qras.models.management import ShiftSchedule
 from datetime import date
-from qras.models.access import Department, Position
 
 
 class Employee(models.Model):
@@ -11,8 +9,8 @@ class Employee(models.Model):
     middle_name      = models.CharField(max_length=100, blank=True)
     last_name        = models.CharField(max_length=100)
     suffix_name      = models.CharField(max_length=100, blank=True)
-    department       = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True)
-    position         = models.ForeignKey(Position, on_delete=models.SET_NULL, null=True)
+    department       = models.ForeignKey('qras.Department', on_delete=models.SET_NULL, null=True)
+    position         = models.ForeignKey('qras.Position', on_delete=models.SET_NULL, null=True)
     hire_date        = models.DateField(null=True, blank=True)
     date_regularized = models.DateField(null=True, blank=True)
     date_resigned    = models.DateField(null=True, blank=True)
@@ -64,7 +62,7 @@ class EmployeeGovernmentID(models.Model):
 
 class EmployeeSchedule(models.Model):
     employee       = models.ForeignKey('Employee', on_delete=models.CASCADE, related_name='schedules')
-    schedule       = models.ForeignKey(ShiftSchedule, on_delete=models.SET_NULL, null=True)
+    schedule       = models.ForeignKey('qras.ShiftSchedule', on_delete=models.SET_NULL, null=True)
     effective_date = models.DateField()
     is_active      = models.BooleanField(default=True)
 
@@ -74,7 +72,7 @@ class EmployeeSchedule(models.Model):
 
 
 class EmployeeDetails(models.Model):
-    employee   = models.OneToOneField(Employee, on_delete=models.CASCADE, related_name='details')
+    employee   = models.OneToOneField('Employee', on_delete=models.CASCADE, related_name='details')
     birth_date = models.DateField(null=True, blank=True)
 
     @property

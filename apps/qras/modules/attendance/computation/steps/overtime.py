@@ -1,7 +1,7 @@
 from datetime import timedelta
 from django.utils import timezone
 from decouple import config as _config
-from app.schedules.models import BREAK_HOURS
+from apps.qras.models.management import BREAK_HOURS
 from ...dataclasses import OvertimeResult
 
 PRE_OT_THRESHOLD  = float(_config('PRE_OT_THRESHOLD_HOURS',  default=1.0))

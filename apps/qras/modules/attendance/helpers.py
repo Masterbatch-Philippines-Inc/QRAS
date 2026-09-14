@@ -2,17 +2,15 @@ HALFDAY_LATE_MIN = 1.0
 
 from datetime import timedelta, datetime, date as date_cls
 from django.utils import timezone, timezone as tz
-from qras.models.attendance import (
+from apps.qras.models.attendance import (
     AttendanceLog, 
     Holiday,
-    LeaveRequest,
     Absents,
     Attendance, 
     AttendanceStatus,
-    MissingLog,
 )
-from qras.models.employee import Employee, EmployeeSchedule, EmployeeRestDay
-from qras.models.employee import BREAK_HOURS
+from apps.qras.models.employee import Employee, EmployeeSchedule, EmployeeRestDay
+from apps.qras.models.management import BREAK_HOURS
 from apps.qras.modules.attendance.computation.logic import compute_attendance_from_logs, _schedule_boundaries
 
 

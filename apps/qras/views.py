@@ -39,7 +39,7 @@ from .modules.attendance.views import (
     ManualOverwriteAttendanceView,
 )
 from .modules.dashboard.views import (
-    Dashboard
+    DashboardView
 )
 from .modules.request.views import (
     OTFilingView,

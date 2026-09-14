@@ -5,24 +5,24 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.db.models import Count
 
-from qras.models.employee import (
+from apps.qras.models.employee import (
   Employee
 )
-from qras.models.attendance import (
+from apps.qras.models.attendance import (
   AttendanceLog,
   Attendance,
   AttendanceLogAudit
 )
-from qras.models.scanner import (
+from apps.qras.models.scanner import (
   ScanCapture
 )
-from qras.modules.scanner.utils import decode_base64_image
-from qras.modules.attendance.helpers import record_attendance
+from apps.qras.modules.scanner.utils import decode_base64_image
+from apps.qras.modules.attendance.helpers import record_attendance
 from datetime import timedelta, date
-from qras.modules.auth.decorators import permission_required
-from qras.modules.auth.helpers import get_dept_queryset_filter
+from apps.qras.modules.auth.decorators import permission_required
+from apps.qras.modules.auth.helpers import get_dept_queryset_filter
 from collections import defaultdict
-from qras.modules.features.clock_offset.utils import get_clock_offset
+from apps.qras.modules.features.clock_offset.utils import get_clock_offset
  
  
 class EmployeeCodeView(View):

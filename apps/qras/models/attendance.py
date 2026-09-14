@@ -1,13 +1,11 @@
 from django.db import models
 from django.conf import settings
-from qras.models.management import ShiftSchedule
-from qras.models.employee import Employee
 
 
 class Attendance(models.Model):
-	employee         = models.ForeignKey('employees.Employee', on_delete=models.CASCADE)
+	employee         = models.ForeignKey('qras.Employee', on_delete=models.CASCADE)
 	date             = models.DateField()
-	schedule         = models.ForeignKey(ShiftSchedule, null=True, blank=True, on_delete=models.SET_NULL)
+	schedule         = models.ForeignKey('qras.ShiftSchedule', null=True, blank=True, on_delete=models.SET_NULL)
 	total_work_hours = models.DecimalField(max_digits=6, decimal_places=2, default=0)
 	overtime_hours   = models.DecimalField(max_digits=6, decimal_places=2, default=0)
 	undertime_hours  = models.DecimalField(max_digits=6, decimal_places=2, default=0)
@@ -47,7 +45,7 @@ class AttendanceStatus(models.Model):
 
 
 class AttendanceLog(models.Model):
-    employee        = models.ForeignKey('employees.Employee', on_delete=models.CASCADE)
+    employee        = models.ForeignKey('qras.Employee', on_delete=models.CASCADE)
     date            = models.DateField()
     timestamp       = models.DateTimeField()
     is_time_in      = models.BooleanField(default=False)
@@ -67,7 +65,7 @@ class AttendanceLog(models.Model):
 
 class AttendanceLogAudit(models.Model):
     original_log  = models.ForeignKey(AttendanceLog, on_delete=models.SET_NULL, null=True, related_name='audits')
-    employee      = models.ForeignKey('employees.Employee', on_delete=models.CASCADE)
+    employee      = models.ForeignKey('Employee', on_delete=models.CASCADE)
     original_time = models.DateTimeField()
     replaced_at   = models.DateTimeField(auto_now_add=True)
     replaced_by   = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
@@ -163,7 +161,7 @@ class HalfdayRequest(models.Model):
         ('am', 'AM'),
         ('pm', 'PM'),
     ]
-    employee     = models.ForeignKey('employees.Employee', on_delete=models.CASCADE, related_name='halfday_requests')
+    employee     = models.ForeignKey('Employee', on_delete=models.CASCADE, related_name='halfday_requests')
     date         = models.DateField()
     halfday_type = models.CharField(max_length=2, choices=HALFDAY_TYPE_CHOICES)
     filed_by     = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
@@ -194,7 +192,7 @@ class LeaveRequest(models.Model):
         ('REJECTED', 'Rejected'),
     ]
 
-    employee            = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='leave_requests')
+    employee            = models.ForeignKey('qras.Employee', on_delete=models.CASCADE, related_name='leave_requests')
     lf_number           = models.CharField(max_length=50, blank=True)
     form_code           = models.CharField(max_length=50, blank=True)
     leave_type          = models.CharField(max_length=20, choices=LEAVE_TYPE_CHOICES)
@@ -220,7 +218,7 @@ class LeaveRequest(models.Model):
 
 
 class Absents(models.Model):
-    employee      = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='excusals')
+    employee      = models.ForeignKey('qras.Employee', on_delete=models.CASCADE, related_name='excusals')
     date          = models.DateField()
     leave_request = models.ForeignKey(LeaveRequest, on_delete=models.SET_NULL, null=True, blank=True, related_name='excusals')
     excused_by    = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
@@ -246,7 +244,7 @@ class MissingLog(models.Model):
         ('RESOLVED',  'Resolved'),
         ('DISMISSED', 'Dismissed'),
     ]
-    employee    = models.ForeignKey('employees.Employee', on_delete=models.CASCADE, related_name='missing_logs')
+    employee    = models.ForeignKey('Employee', on_delete=models.CASCADE, related_name='missing_logs')
     date        = models.DateField()
     log_type    = models.CharField(max_length=10, choices=LOG_TYPE_CHOICES)  # the MISSING one
     time_in     = models.TimeField(null=True, blank=True)   # recorded time in, if it exists

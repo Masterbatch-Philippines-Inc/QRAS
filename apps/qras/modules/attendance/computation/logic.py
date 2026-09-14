@@ -1,21 +1,18 @@
-_ND_START = time(22, 0)  # 10:00 PM — PH Labor Code Art. 86
-_ND_END   = time(6,  0)  # 06:00 AM
-
 from django.utils import timezone
 from datetime import date, datetime, time, timedelta
 
-from qras.models.employee import (
+from apps.qras.models.employee import (
     EmployeeGroupMembership
 )
-from qras.models.management import BREAK_HOURS
-from qras.models.attendance import (
+from apps.qras.models.management import BREAK_HOURS
+from apps.qras.models.attendance import (
     Attendance, 
     AttendanceStatus,
     AttendanceLog,
     Holiday,
     OvertimeRequest
 )
-from qras.models.employee import EmployeeSchedule
+from apps.qras.models.employee import EmployeeSchedule
 
 from .steps.pairing    import pair_logs
 from .steps.hours      import compute_hours
@@ -25,6 +22,10 @@ from .steps.completion import compute_completion
 from .steps.undertime  import compute_undertime
 from .steps.overtime   import compute_overtime, _split_24hr_schedule
 from .steps.credited   import compute_credited
+
+
+_ND_START = time(22, 0)  # 10:00 PM — PH Labor Code Art. 86
+_ND_END   = time(6,  0)  # 06:00 AM
 
 
 def _get_schedule(employee, work_date, override=None):

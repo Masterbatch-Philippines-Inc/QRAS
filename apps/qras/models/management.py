@@ -3,11 +3,10 @@ BREAK_HOURS = 1.0
 from django.db import models
 from datetime import timedelta, datetime, date
 from django.conf import settings
-from apps.qras.models.employee import Employee
 
 
 class ScheduleRecomputeEvent(models.Model):
-    employee          = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='recompute_events')
+    employee          = models.ForeignKey('qras.Employee', on_delete=models.CASCADE, related_name='recompute_events')
     old_schedule      = models.ForeignKey('ShiftSchedule', on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
     new_schedule      = models.ForeignKey('ShiftSchedule', on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
     recomputed_by     = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
@@ -81,7 +80,7 @@ class ShiftSchedule(models.Model):
 
 
 class ScheduleActivityLog(models.Model):
-    employee          = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='schedule_activity_logs')
+    employee          = models.ForeignKey('qras.Employee', on_delete=models.CASCADE, related_name='schedule_activity_logs')
     assigned_schedule = models.ForeignKey('ShiftSchedule', on_delete=models.SET_NULL, null=True, related_name='+')
     previous_schedule = models.ForeignKey('ShiftSchedule', on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
     acted_by          = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)

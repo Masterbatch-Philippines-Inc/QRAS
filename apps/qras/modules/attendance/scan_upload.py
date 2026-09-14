@@ -10,9 +10,9 @@ from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils import timezone
 
-from app.employees.models import Employee
-from app.attendance.helpers import record_attendance, check_duplicate_log, _flag_past_missing_logs
-from app.authentication.decorators import role_required, permission_required
+from apps.qras.models.employee import Employee
+from apps.qras.modules.attendance.helpers import record_attendance, check_duplicate_log, _flag_past_missing_logs
+from apps.qras.modules.auth.decorators import role_required, permission_required
 from django.utils.decorators import method_decorator
 
 
