@@ -1,1 +1,1 @@
-from .core import compute_attendance_from_logs
+from .logic import compute_attendance_from_logs

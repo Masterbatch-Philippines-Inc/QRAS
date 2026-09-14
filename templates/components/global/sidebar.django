@@ -1,74 +1,76 @@
 {% load static %}
-<!-- ─── MOBILE HEADER (hidden on lg+) ──────────────────────────── -->
-<header class="navbar navbar-expand-md d-lg-none" data-bs-theme="dark">
-  <div class="container-xl">
-    <!-- Hamburger — toggles the sidebar -->
-    <button class="navbar-toggler" type="button"
-            data-bs-toggle="offcanvas"
-            data-bs-target="#sidebarOffcanvas"
-            aria-controls="sidebarOffcanvas">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <!-- Brand -->
-    <a href="/" aria-label="Tabler" class="navbar-brand position-absolute start-50 translate-middle-x navbar-brand-autodark">
-      <svg fill="#000000" style="--tblr-icon-size: 1.5rem" viewBox="0 0 24 24" id="qr-code-scan" data-name="Flat Color" xmlns="http://www.w3.org/2000/svg" class="icon flat-color" transform="rotate(45)">
-        <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-        <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-        <g id="SVGRepo_iconCarrier">
-          <path id="secondary" d="M12,13v4a1,1,0,0,1-1,1H7a1,1,0,0,1-1-1V13a1,1,0,0,1,1-1h4A1,1,0,0,1,12,13ZM7,10H9a1,1,0,0,0,1-1V7A1,1,0,0,0,9,6H7A1,1,0,0,0,6,7V9A1,1,0,0,0,7,10Zm10,4H15a1,1,0,0,0-1,1v2a1,1,0,0,0,1,1h2a1,1,0,0,0,1-1V15A1,1,0,0,0,17,14Zm0-8H13a1,1,0,0,0-1,1v4a1,1,0,0,0,1,1h4a1,1,0,0,0,1-1V7A1,1,0,0,0,17,6Z" style="fill: #fff;"></path>
-          <path id="primary" d="M21,9a1,1,0,0,1-1-1V4H16a1,1,0,0,1,0-2h4a2,2,0,0,1,2,2V8A1,1,0,0,1,21,9Zm1,11V16a1,1,0,0,0-2,0v4H16a1,1,0,0,0,0,2h4A2,2,0,0,0,22,20ZM4,8V4H8A1,1,0,0,0,8,2H4A2,2,0,0,0,2,4V8A1,1,0,0,0,4,8ZM9,21a1,1,0,0,0-1-1H4V16a1,1,0,0,0-2,0v4a2,2,0,0,0,2,2H8A1,1,0,0,0,9,21Z" style="fill: #fff;"></path>
-        </g>
-      </svg>
-      <h2 class="mb-0">QRAS</h2>
-    </a>
-    <!-- User avatar -->
-    {% if user.is_authenticated %}
-    <div class="navbar-nav flex-row ms-auto">
-      <div class="nav-item dropdown">
-        <a href="#" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown">
-          <span class="avatar avatar-sm">
-            {{ user.first_name|first }}{{ user.last_name|first }}
-          </span>
-        </a>
-        <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-          <a href="{% url 'logout' %}" class="dropdown-item">Logout</a>
+{% if user.is_authenticated %}
+  <!-- ─── MOBILE HEADER (hidden on lg+) ──────────────────────────── -->
+  <header class="navbar navbar-expand-md d-lg-none" data-bs-theme="dark">
+    <div class="container-xl">
+      <!-- Hamburger — toggles the sidebar -->
+      <button class="navbar-toggler" type="button"
+              data-bs-toggle="offcanvas"
+              data-bs-target="#sidebarOffcanvas"
+              aria-controls="sidebarOffcanvas">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <!-- Brand -->
+      <a href="/" aria-label="Tabler" class="navbar-brand position-absolute start-50 translate-middle-x navbar-brand-autodark">
+        <svg fill="#000000" style="--tblr-icon-size: 1.5rem" viewBox="0 0 24 24" id="qr-code-scan" data-name="Flat Color" xmlns="http://www.w3.org/2000/svg" class="icon flat-color" transform="rotate(45)">
+          <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+          <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+          <g id="SVGRepo_iconCarrier">
+            <path id="secondary" d="M12,13v4a1,1,0,0,1-1,1H7a1,1,0,0,1-1-1V13a1,1,0,0,1,1-1h4A1,1,0,0,1,12,13ZM7,10H9a1,1,0,0,0,1-1V7A1,1,0,0,0,9,6H7A1,1,0,0,0,6,7V9A1,1,0,0,0,7,10Zm10,4H15a1,1,0,0,0-1,1v2a1,1,0,0,0,1,1h2a1,1,0,0,0,1-1V15A1,1,0,0,0,17,14Zm0-8H13a1,1,0,0,0-1,1v4a1,1,0,0,0,1,1h4a1,1,0,0,0,1-1V7A1,1,0,0,0,17,6Z" style="fill: #fff;"></path>
+            <path id="primary" d="M21,9a1,1,0,0,1-1-1V4H16a1,1,0,0,1,0-2h4a2,2,0,0,1,2,2V8A1,1,0,0,1,21,9Zm1,11V16a1,1,0,0,0-2,0v4H16a1,1,0,0,0,0,2h4A2,2,0,0,0,22,20ZM4,8V4H8A1,1,0,0,0,8,2H4A2,2,0,0,0,2,4V8A1,1,0,0,0,4,8ZM9,21a1,1,0,0,0-1-1H4V16a1,1,0,0,0-2,0v4a2,2,0,0,0,2,2H8A1,1,0,0,0,9,21Z" style="fill: #fff;"></path>
+          </g>
+        </svg>
+        <h2 class="mb-0">QRAS</h2>
+      </a>
+      <!-- User avatar -->
+      {% if user.is_authenticated %}
+      <div class="navbar-nav flex-row ms-auto">
+        <div class="nav-item dropdown">
+          <a href="#" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown">
+            <span class="avatar avatar-sm">
+              {{ user.first_name|first }}{{ user.last_name|first }}
+            </span>
+          </a>
+          <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+            <a href="{% url 'logout' %}" class="dropdown-item">Logout</a>
+          </div>
         </div>
       </div>
+      {% endif %}
     </div>
-    {% endif %}
-  </div>
-</header>
-<!-- ─── DESKTOP SIDEBAR (hidden on mobile, shown lg+) ─────────── -->
-<aside class="navbar navbar-vertical navbar-expand-lg d-none d-lg-flex" data-bs-theme="dark">
-  <div class="container-fluid">
-    <div class="navbar-collapse" id="sidebar-menu">
-        <a href="/" aria-label="Tabler" class="navbar-brand mx-auto mb-0 mt-3 navbar-brand-autodark">
-          <svg fill="#000000" style="--tblr-icon-size: 1.5rem" viewBox="0 0 24 24" id="qr-code-scan" data-name="Flat Color" xmlns="http://www.w3.org/2000/svg" class="icon flat-color" transform="rotate(45)">
-            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-            <g id="SVGRepo_iconCarrier">
-              <path id="secondary" d="M12,13v4a1,1,0,0,1-1,1H7a1,1,0,0,1-1-1V13a1,1,0,0,1,1-1h4A1,1,0,0,1,12,13ZM7,10H9a1,1,0,0,0,1-1V7A1,1,0,0,0,9,6H7A1,1,0,0,0,6,7V9A1,1,0,0,0,7,10Zm10,4H15a1,1,0,0,0-1,1v2a1,1,0,0,0,1,1h2a1,1,0,0,0,1-1V15A1,1,0,0,0,17,14Zm0-8H13a1,1,0,0,0-1,1v4a1,1,0,0,0,1,1h4a1,1,0,0,0,1-1V7A1,1,0,0,0,17,6Z" style="fill: #fff;"></path>
-              <path id="primary" d="M21,9a1,1,0,0,1-1-1V4H16a1,1,0,0,1,0-2h4a2,2,0,0,1,2,2V8A1,1,0,0,1,21,9Zm1,11V16a1,1,0,0,0-2,0v4H16a1,1,0,0,0,0,2h4A2,2,0,0,0,22,20ZM4,8V4H8A1,1,0,0,0,8,2H4A2,2,0,0,0,2,4V8A1,1,0,0,0,4,8ZM9,21a1,1,0,0,0-1-1H4V16a1,1,0,0,0-2,0v4a2,2,0,0,0,2,2H8A1,1,0,0,0,9,21Z" style="fill: #fff;"></path>
-            </g>
-          </svg>
-          <h2 class="mb-0">QRAS</h2>
-        </a>
-        {% include 'components/shared/nav_link.django' %}
-    </div>
-  </div>
-</aside>
-<!-- ─── MOBILE OFFCANVAS SIDEBAR ──────────────────────────────── -->
-<div class="offcanvas offcanvas-start" data-bs-theme="dark" tabindex="-1"
-    id="sidebarOffcanvas" style="width: 260px;">
-  <div class="offcanvas-header">
-    <h5 class="offcanvas-title fw-bold">QRAS</h5>
-    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-  </div>
-  <div class="offcanvas-body p-0">
-    <nav class="navbar-vertical">
-      <div class="container-fluid">
-        {% include 'components/shared/nav_link.django' %}
+  </header>
+  <!-- ─── DESKTOP SIDEBAR (hidden on mobile, shown lg+) ─────────── -->
+  <aside class="navbar navbar-vertical navbar-expand-lg d-none d-lg-flex" data-bs-theme="dark">
+    <div class="container-fluid">
+      <div class="navbar-collapse" id="sidebar-menu">
+          <a href="/" aria-label="Tabler" class="navbar-brand mx-auto mb-0 mt-3 navbar-brand-autodark">
+            <svg fill="#000000" style="--tblr-icon-size: 1.5rem" viewBox="0 0 24 24" id="qr-code-scan" data-name="Flat Color" xmlns="http://www.w3.org/2000/svg" class="icon flat-color" transform="rotate(45)">
+              <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+              <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+              <g id="SVGRepo_iconCarrier">
+                <path id="secondary" d="M12,13v4a1,1,0,0,1-1,1H7a1,1,0,0,1-1-1V13a1,1,0,0,1,1-1h4A1,1,0,0,1,12,13ZM7,10H9a1,1,0,0,0,1-1V7A1,1,0,0,0,9,6H7A1,1,0,0,0,6,7V9A1,1,0,0,0,7,10Zm10,4H15a1,1,0,0,0-1,1v2a1,1,0,0,0,1,1h2a1,1,0,0,0,1-1V15A1,1,0,0,0,17,14Zm0-8H13a1,1,0,0,0-1,1v4a1,1,0,0,0,1,1h4a1,1,0,0,0,1-1V7A1,1,0,0,0,17,6Z" style="fill: #fff;"></path>
+                <path id="primary" d="M21,9a1,1,0,0,1-1-1V4H16a1,1,0,0,1,0-2h4a2,2,0,0,1,2,2V8A1,1,0,0,1,21,9Zm1,11V16a1,1,0,0,0-2,0v4H16a1,1,0,0,0,0,2h4A2,2,0,0,0,22,20ZM4,8V4H8A1,1,0,0,0,8,2H4A2,2,0,0,0,2,4V8A1,1,0,0,0,4,8ZM9,21a1,1,0,0,0-1-1H4V16a1,1,0,0,0-2,0v4a2,2,0,0,0,2,2H8A1,1,0,0,0,9,21Z" style="fill: #fff;"></path>
+              </g>
+            </svg>
+            <h2 class="mb-0">QRAS</h2>
+          </a>
+          {% include 'components/shared/nav_link.django' %}
       </div>
-    </nav>
+    </div>
+  </aside>
+  <!-- ─── MOBILE OFFCANVAS SIDEBAR ──────────────────────────────── -->
+  <div class="offcanvas offcanvas-start" data-bs-theme="dark" tabindex="-1"
+      id="sidebarOffcanvas" style="width: 260px;">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title fw-bold">QRAS</h5>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body p-0">
+      <nav class="navbar-vertical">
+        <div class="container-fluid">
+          {% include 'components/shared/nav_link.django' %}
+        </div>
+      </nav>
+    </div>
   </div>
-</div>
+{% endif %}

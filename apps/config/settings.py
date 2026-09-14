@@ -29,6 +29,7 @@ DEBUG = config('DJANGO_DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS: list[str] = config('DJANGO_ALLOWED_HOSTS', cast=Csv()) # type: ignore
 
+CSRF_TRUSTED_ORIGINS = ["https://192.168.1.13:9000"]
 
 # Application definition
 
@@ -216,3 +217,5 @@ LOGGING = {
         }
     },
 }
+
+CLOCK_OFFSET_MINUTES = config('CLOCK_OFFSET_MINUTES', default=5, cast=int)

@@ -21,7 +21,7 @@
   </head>
 
   <body class="antialiased">
-    {% comment %} {% include 'components/global/sidebar.django' %} {% endcomment %}
+    {% include 'components/global/sidebar.django' %}
     {% comment %} {% include 'components/global/modal.django' %}
     {% include 'components/shared/toast.django' %}
     {% include 'components/shared/toast_modal.django' %} {% endcomment %}

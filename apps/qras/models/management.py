@@ -1,0 +1,98 @@
+"""
+    * Fixed 60-minute break
+    * Not configurable
+"""
+BREAK_HOURS = 1.0 
+
+
+from django.db import models
+from datetime import timedelta, datetime, date
+from django.conf import settings
+from qras.models.employee import Employee
+from qras.models.management import ShiftSchedule
+
+
+class ScheduleRecomputeEvent(models.Model):
+    employee          = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='recompute_events')
+    old_schedule      = models.ForeignKey(ShiftSchedule, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    new_schedule      = models.ForeignKey(ShiftSchedule, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    recomputed_by     = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    recomputed_at     = models.DateTimeField(auto_now_add=True)
+    scope_description = models.CharField(max_length=100)  # e.g. "all", "single_date: 2026-03-01", "date_range: 2026-03-01 to 2026-03-15"
+
+    def __str__(self):
+        return f"Recompute | {self.employee} | {self.recomputed_at.date()}"
+
+    class Meta:
+        ordering = ['-recomputed_at']
+        db_table = 'schedule_recompute_events'
+
+
+class ScheduleRecomputeDetail(models.Model):
+    event               = models.ForeignKey(ScheduleRecomputeEvent, on_delete=models.CASCADE, related_name='details')
+    date                = models.DateField()
+    before_time_in      = models.DateTimeField(null=True, blank=True)
+    before_time_out     = models.DateTimeField(null=True, blank=True)
+    before_credited_hrs = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+    after_time_in       = models.DateTimeField(null=True, blank=True)
+    after_time_out      = models.DateTimeField(null=True, blank=True)
+    after_credited_hrs  = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+
+    def __str__(self):
+        return f"Detail | {self.event.employee} | {self.date}"
+
+    class Meta:
+        ordering = ['date']
+        db_table = 'schedule_recompute_details'
+
+
+class ShiftSchedule(models.Model):
+    """
+    Replaces WorkPolicy. One row per named schedule (Day Sched, Night Sched, etc.).
+    required_hours is derived from shift_end - shift_start - 1h break (not stored).
+    """
+    name                = models.CharField(max_length=100)
+    shift_start         = models.TimeField()
+    shift_end           = models.TimeField()
+    halfday_threshold   = models.DecimalField(max_digits=4, decimal_places=2, default=4)
+    crosses_midnight    = models.BooleanField(default=False)
+    is_active           = models.BooleanField(default=True)
+    is_global           = models.BooleanField(default=False)
+    rest_days           = models.JSONField(default=list, blank=True)
+    specific_dates      = models.JSONField(default=list, blank=True)
+    created_by          = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_schedules')
+    
+    @property
+    def specific_dates_json(self):
+        import json
+        return json.dumps(self.specific_dates or [])
+ 
+    @property
+    def required_hours(self):
+        """Returns required work hours as a float (shift duration minus fixed 1h break)."""
+        base = date.today()
+        s = datetime.combine(base, self.shift_start)
+        e = datetime.combine(
+            base + timedelta(days=1) if self.crosses_midnight else base,
+            self.shift_end
+        )
+        return round((e - s).total_seconds() / 3600 - BREAK_HOURS, 2)
+ 
+    def __str__(self):
+        return self.name
+ 
+    class Meta:
+        ordering = ['name']
+        db_table = 'schedule_shifts'
+
+
+class ScheduleActivityLog(models.Model):
+    employee          = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='schedule_activity_logs')
+    assigned_schedule = models.ForeignKey('ShiftSchedule', on_delete=models.SET_NULL, null=True, related_name='+')
+    previous_schedule = models.ForeignKey('ShiftSchedule', on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    acted_by          = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    acted_at          = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-acted_at']
+        db_table = 'schedule_activity_logs'

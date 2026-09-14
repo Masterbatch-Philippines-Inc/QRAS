@@ -1,24 +1,38 @@
 import json
-from datetime import datetime
-from datetime import datetime as dt
-
+from datetime import datetime, timezone
+from django.utils.decorators import method_decorator
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
 from django.shortcuts import render
-from django.utils import timezone
 from django.views import View
 
-from app.employees.models import Employee, EmployeeSchedule, EmployeeGroupMembership
-from app.attendance.models import (
-    Attendance, AttendanceLog, AttendanceStatus,
-    OvertimeRequest, UndertimeRequest, 
-    HalfdayRequest, LeaveRequest
+from qras.models.employee import (
+    Employee
 )
-from app.attendance.helpers import format_hours_to_text, compute_leave_days, approve_leave, reject_leave, _get_credited_for_undertime, _compute_halfday_credited
-from app.authentication.decorators import role_required, permission_required
-from app.authentication.helpers import get_dept_queryset_filter
-from django.utils.decorators import method_decorator
-from app.authentication.helpers import get_dept_queryset_filter, get_self_exclude
+from qras.models.attendance import (
+    Attendance,
+    AttendanceLog,
+    AttendanceStatus,
+    LeaveRequest,
+    OvertimeRequest,
+    UndertimeRequest,
+    HalfdayRequest,
+)
+from qras.modules.auth.decorators import (
+    permission_required
+)
+from qras.modules.auth.helpers import (
+    get_dept_queryset_filter,
+    get_self_exclude
+)
+from qras.modules.attendance.helpers import (
+    _get_credited_for_undertime,
+    format_hours_to_text,
+    _compute_halfday_credited,
+    compute_leave_days,
+    approve_leave,
+    reject_leave
+)
 
 
 @method_decorator([permission_required('ot_filing', 'create')], name='dispatch')
@@ -468,8 +482,8 @@ class LeaveFilingView(LoginRequiredMixin, View):
             data       = json.loads(request.body)
             emp_id     = data.get('employee_id')
             leave_type = data.get('leave_type')
-            date_from  = dt.strptime(data.get('date_from'), '%Y-%m-%d').date()
-            date_to    = dt.strptime(data.get('date_to'),   '%Y-%m-%d').date()
+            date_from  = datetime.strptime(data.get('date_from'), '%Y-%m-%d').date()
+            date_to    = datetime.strptime(data.get('date_to'),   '%Y-%m-%d').date()
 
             if date_from > date_to:
                 return JsonResponse({"error": "Date from must be before date to."}, status=400)
@@ -579,8 +593,8 @@ class LeaveComputeDaysView(LoginRequiredMixin, View):
     def get(self, request):
         try:
             emp_id    = request.GET.get('employee_id')
-            date_from = dt.strptime(request.GET.get('date_from'), '%Y-%m-%d').date()
-            date_to   = dt.strptime(request.GET.get('date_to'),   '%Y-%m-%d').date()
+            date_from = datetime.strptime(request.GET.get('date_from'), '%Y-%m-%d').date()
+            date_to   = datetime.strptime(request.GET.get('date_to'),   '%Y-%m-%d').date()
             employee  = Employee.objects.get(employee_id=emp_id)
 
             num_days, rest_hits = compute_leave_days(date_from, date_to, employee)
@@ -591,4 +605,3 @@ class LeaveComputeDaysView(LoginRequiredMixin, View):
             })
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
-
