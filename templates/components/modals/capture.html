@@ -1,0 +1,57 @@
+{% load static %}
+<!--  ═══════════════════════════════════════════
+      MODAL — Scan Captures
+  ═══════════════════════════════════════════  -->
+  <div class="modal modal-blur fade" id="captureModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header mt-1">
+          <div>
+            <h3 class="modal-title mb-0">Scan Captures of <span id="capture-emp-name" class="text-primary"></span></h3>
+            <small class="text-secondary" id="capture-date-range-label"></small>
+            <small class="text-secondary ms-1" id="capture-count-label"></small>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-0">
+          <div class="table-responsive">
+            <table class="table table-vcenter table-bordered mb-0">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Time</th>
+                  <th>Scan Type</th>
+                  <th>Captured Images</th>
+                </tr>
+              </thead>
+              <tbody id="capture-modal-body">
+                <tr>
+                  <td colspan="4" class="text-center text-secondary py-4">Loading…</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer d-flex align-items-center">
+          <div class="dropdown">
+            <a class="btn dropdown-toggle" data-bs-toggle="dropdown">
+              <span id="capture-modal-page-count" class="me-1">10</span> records
+            </a>
+            <div class="dropdown-menu">
+              <a class="dropdown-item" onclick="setModalPageSize(10)">10 records</a>
+              <a class="dropdown-item" onclick="setModalPageSize(20)">20 records</a>
+              <a class="dropdown-item" onclick="setModalPageSize(50)">50 records</a>
+            </div>
+          </div>
+          <button id="capture-modal-help-btn" class="btn btn-sm btn-ghost-secondary me-1 flex-end" title="Modal tour">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            &nbsp;Need Help
+          </button>
+          <ul class="pagination m-0 ms-auto" id="capture-modal-pagination"></ul>
+        </div>
+      </div>
+    </div>
+  </div>

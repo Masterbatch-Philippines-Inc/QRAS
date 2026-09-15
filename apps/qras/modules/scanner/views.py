@@ -23,11 +23,23 @@ from apps.qras.modules.auth.decorators import permission_required
 from apps.qras.modules.auth.helpers import get_dept_queryset_filter
 from collections import defaultdict
 from apps.qras.modules.features.clock_offset.utils import get_clock_offset
+
+
+from apps.qras.modules.attendance.helpers import record_attendance, check_duplicate_log, _flag_past_missing_logs
+from apps.qras.modules.auth.decorators import role_required, permission_required
+from django.utils.decorators import method_decorator
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import JsonResponse
+from django.shortcuts import render
+from django.views import View
+import fitz  # PyMuPDF
+import json as json_module
+from datetime import datetime, timedelta, date, date as date_cls
  
  
 class EmployeeCodeView(View):
     def get(self, request):
-        return render(request, 'scanner/employee-code-input.html')
+        return render(request, 'pages/scanner/codes.django')
 
 class EmployeeLookupView(View):
     def get(self, request, employee_id):
@@ -50,7 +62,7 @@ class EmployeeLookupView(View):
         })
 
 class ScanAttendanceView(View):
-    template_name = 'scanner/qr.html'
+    template_name = 'pages/scanner/qrs.django'
  
     def post(self, request):
         emp_id = request.POST.get("employee_id")
@@ -195,7 +207,7 @@ class UpdateAttendanceView(View):
 
 @method_decorator(permission_required('attendance', 'read'), name='dispatch')
 class ScanCaptureListView(View):
-    template_name = 'scanner/scan-captures.html'
+    template_name = 'pages/schedule/captures.django'
 
     def get(self, request):
         dept_filter = get_dept_queryset_filter(request, dept_field_path='department')
@@ -305,3 +317,221 @@ class CheckTimeInStatusView(View):
         ).exists()
 
         return JsonResponse({'status': 'ok', 'has_time_in': has_time_in})
+
+
+
+
+@method_decorator([permission_required('settings_smart_manual_attendance', 'read')], name='dispatch')
+class ScanUploadView(LoginRequiredMixin, View):
+    """Renders the upload/preview page."""
+
+    def get(self, request):
+        employees = list(
+            Employee.objects.filter(is_active=True, is_resigned=False)
+            .order_by('last_name', 'first_name')
+            .values('id', 'last_name', 'first_name', 'middle_name')
+        )
+        return render(request, 'pages/attendance/smart_manual_entry.django', {
+            'employees_json': json_module.dumps(employees),
+        })
+
+
+@method_decorator([permission_required('settings_smart_manual_attendance', 'read')], name='dispatch')
+class ScanUploadParseView(LoginRequiredMixin, View):
+    """
+    POST: receives uploaded PDF, extracts text per page (falls back to EasyOCR
+    for scanned pages), parses rows, matches employees, returns JSON preview.
+    """
+
+    def post(self, request):
+        
+        from apps.qras.modules.attendance.scan_upload import (
+            _extract_text_by_position,
+            _ocr_to_text,
+            _parse_date_from_text,
+            _detect_column_slots,
+            _parse_rows_positional,
+            _parse_rows,
+            _match_employee
+        )
+        
+        pdf_file = request.FILES.get('pdf')
+        if not pdf_file:
+            return JsonResponse({'error': 'No file uploaded.'}, status=400)
+
+        pdf_bytes = pdf_file.read()
+        try:
+            doc = fitz.open(stream=pdf_bytes, filetype='pdf')
+        except Exception as e:
+            return JsonResponse({'error': f'Cannot open PDF: {e}'}, status=400)
+
+        pages_data = []
+
+        for page_num in range(len(doc)):
+            page = doc[page_num]
+
+            # ── Try text layer first ──────────────────────────────────────
+            text, lines = _extract_text_by_position(page)
+
+            if len(text) < 80:
+                try:
+                    pix       = page.get_pixmap(matrix=fitz.Matrix(2, 2))
+                    img_bytes = pix.tobytes('png')
+                    text      = _ocr_to_text(img_bytes)
+                    lines     = []   # OCR path has no position data; fall back to text parser
+                except Exception as e:
+                    ...
+                    continue
+
+            page_date = _parse_date_from_text(text)
+
+            if page_date and lines:
+                slot_xs  = _detect_column_slots(lines)
+                raw_rows = _parse_rows_positional(lines, slot_xs, page_date) if slot_xs else _parse_rows(text, page_date)
+            elif page_date:
+                raw_rows = _parse_rows(text, page_date)
+            else:
+                raw_rows = []
+
+            parsed_rows = []
+            for row in raw_rows:
+                emp = _match_employee(row['name_raw'])
+                parsed_rows.append({
+                    'row_num':          row['row_num'],
+                    'name_raw':         row['name_raw'],
+                    'employee_id':      emp.id if emp else None,
+                    'employee_display': f"{emp.last_name}, {emp.first_name}" if emp else None,
+                    'match_status':     'matched' if emp else 'unmatched',
+                    'time_pairs':       row['time_pairs'],
+                    'remarks':          row['remarks'],
+                    'date':             row['date'],
+                    'skip':             False,
+                })
+
+            pages_data.append({
+                'page':  page_num + 1,
+                'date':  str(page_date) if page_date else None,
+                'rows':  parsed_rows,
+                'error': None,
+            })
+
+        doc.close()
+        return JsonResponse({'pages': pages_data})
+
+
+@method_decorator([permission_required('settings_smart_manual_attendance', 'create')], name='dispatch')
+class ScanUploadSaveView(LoginRequiredMixin, View):
+    """
+    POST: receives confirmed records (JSON), saves each time entry via
+    record_attendance (same as manual attendance).
+    """
+
+    def post(self, request):
+
+        from apps.qras.modules.attendance.scan_upload import _to_aware
+        
+        try:
+            payload = json_module.loads(request.body)
+        except json_module.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON.'}, status=400)
+
+        records = payload.get('records', [])
+        saved, errors = 0, []
+        affected_dates = set()
+
+        for rec in records:
+            emp_id     = rec.get('employee_id')
+            date_str   = rec.get('date')
+            time_pairs = rec.get('time_pairs', [])
+
+            if not emp_id or not date_str:
+                errors.append({
+                    'row':  rec.get('row_num'),
+                    'name': rec.get('name_raw'),
+                    'error': 'Missing employee or date.',
+                })
+                continue
+
+            try:
+                emp       = Employee.objects.get(id=emp_id)
+                base_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            except Exception as e:
+                errors.append({'row': rec.get('row_num'), 'name': rec.get('name_raw'), 'error': str(e)})
+                continue
+
+            for pair in time_pairs:
+                t_in  = pair[0] if pair else None
+                t_out = pair[1] if len(pair) > 1 else None
+
+                if not t_in and not t_out:
+                    continue
+
+                try:
+                    if t_in:
+                        dup_in = check_duplicate_log(emp, base_date, 'time_in')
+                        if dup_in:
+                            errors.append({
+                                'row':  rec.get('row_num'),
+                                'name': rec.get('name_raw'),
+                                'error': f"Duplicate time-in for {emp.employee_id} on {base_date}.",
+                            })
+                        else:
+                            ts_in = _to_aware(t_in, base_date)
+                            record_attendance(
+                                employee=emp,
+                                date=base_date,
+                                timestamp=ts_in,
+                                is_time_in=True,
+                                is_time_out=False,
+                                att_source='manual',
+                            )
+                            affected_dates.add(base_date)
+
+                    if t_out:
+                        ts_out   = _to_aware(t_out, base_date, prev_hhmm=t_in)
+                        out_date = ts_out.astimezone(timezone.get_current_timezone()).date()
+
+                        dup_out = check_duplicate_log(emp, out_date, 'time_out')
+                        if not dup_out or (isinstance(dup_out, dict) and dup_out.get('status') == 'no_time_in'):
+                            record_attendance(
+                                employee=emp,
+                                date=out_date,
+                                timestamp=ts_out,
+                                is_time_in=False,
+                                is_time_out=True,
+                                att_source='manual',
+                            )
+                            affected_dates.add(out_date)
+
+                    saved += 1
+
+                except Exception as e:
+                    errors.append({
+                        'row':  rec.get('row_num'),
+                        'name': rec.get('name_raw'),
+                        'error': str(e),
+                    })
+
+        # today = date_type.today()
+        # for d in affected_dates:
+        #     if d < today:
+        #         detect_and_sync_missing_logs(d)
+
+        # Final pass — rescan all affected employees now that all logs are
+        # in the database. This catches dates whose later-log proof only
+        # appeared partway through the save loop.
+        affected_employees = {
+            Employee.objects.filter(id=rec.get('employee_id')).first()
+            for rec in records if rec.get('employee_id')
+        }
+        earliest_date = min(affected_dates) if affected_dates else None
+        for emp in affected_employees:
+            if emp:
+                _flag_past_missing_logs(
+                    emp,
+                    date_cls.today(),
+                    lookback_start=earliest_date,
+                )
+
+        return JsonResponse({'saved': saved, 'errors': errors})
+

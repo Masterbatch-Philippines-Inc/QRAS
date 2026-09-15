@@ -10,7 +10,7 @@ from apps.qras.models.attendance import (
     AttendanceStatus,
 )
 from apps.qras.models.employee import Employee, EmployeeSchedule, EmployeeRestDay
-from apps.qras.models.management import BREAK_HOURS
+from apps.qras.models.schedules import BREAK_HOURS
 from apps.qras.modules.attendance.computation.logic import compute_attendance_from_logs, _schedule_boundaries
 
 

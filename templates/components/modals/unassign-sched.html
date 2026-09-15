@@ -1,0 +1,23 @@
+{% load static %}
+  <!-- ═══════════════════════════════════════════
+      MODAL — Unassign Schedule
+  ═══════════════════════════════════════════ -->
+  <div class="modal modal-blur fade" id="unassignScheduleModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Unassign Schedule</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body text-center py-3">
+          <p>You are about to unassign <strong id="unassign-emp-name">—</strong> from <strong id="unassign-sched-name">—</strong> scheduled shift. Do you want to proceed?</p>
+          <p class="text-secondary">This employee will have no schedule after this action.</p>
+          <input type="hidden" id="unassign-emp-id" />
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost-secondary me-auto" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-danger" id="btn-confirm-unassign-sched" data-bs-dismiss="modal">Remove</button>
+        </div>
+      </div>
+    </div>
+  </div>

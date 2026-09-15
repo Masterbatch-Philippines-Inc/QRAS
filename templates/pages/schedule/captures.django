@@ -1,0 +1,358 @@
+{% extends 'base.django' %}
+{% load static %}
+{% block content %}
+    <div class="page-wrapper">
+
+      {% if dept_warning %}
+      <div class="container-xl mt-4">
+        <div class="alert alert-warning d-flex gap-2 align-items-center">
+          <i class="ti ti-alert-triangle flex-shrink-0"></i>
+          Your account is not assigned to a department. Contact your administrator to get access.
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="container-xl mt-5">
+        <div class="d-flex align-items-center justify-content-between" style="margin-bottom:.35rem;">
+          <h2 class="mb-0">Management</h2>
+          <button id="scan-captures-btn-help-tour" class="btn btn-sm btn-ghost-secondary" title="Employee Records page tour">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            &nbsp;Need Help
+          </button>
+        </div>
+        <ol class="breadcrumb text-secondary" style="margin: 0 0 1rem 0;">
+          <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+          <li class="breadcrumb-item active">Scan Captures</li>
+        </ol>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="row w-100 align-items-center g-2">
+              <div class="col">
+                <h3 class="card-title mb-0">Employee Scan Captures</h3>
+                <p class="text-secondary m-0" style="font-size:13px;">
+                  Click an employee to view their scan capture records.
+                </p>
+              </div>
+              <div class="col-auto">
+                <div class="input-group input-group-flat">
+                  <span class="input-group-text">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                      fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+                      <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                  </span>
+                  <input type="text" id="scan-daterange" class="form-control" style="width:220px;"
+                        placeholder="Select date range" autocomplete="off" readonly />
+                </div>
+              </div>
+              <div class="col-auto">
+                <div class="input-group input-group-flat">
+                  <span class="input-group-text">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                      fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/>
+                    </svg>
+                  </span>
+                  <input id="scan-search" type="text" class="form-control" autocomplete="off" placeholder="Search employee…" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-vcenter table-bordered table-hover mb-0" id="scan-emp-table">
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Department</th>
+                  <th>Captures in Range</th>
+                </tr>
+              </thead>
+              <tbody id="scan-emp-tbody">
+                {% for emp in employees %}
+                <tr class="scan-emp-row"
+                    data-employee-id="{{ emp.employee_id }}"
+                    data-name="{{ emp.last_name }}, {{ emp.first_name }}"
+                    data-search="{{ emp.last_name }} {{ emp.first_name }} {{ emp.department.name|default:'' }} {{ emp.position.title|default:'' }}"
+                    style="cursor:pointer;">
+                  <td>
+                    <div class="fw-semibold">{{ emp.last_name }}, {{ emp.first_name }}</div>
+                    <div class="text-secondary" style="font-size:12px;">{{ emp.position.title|default:'—' }}</div>
+                  </td>
+                  <td>{{ emp.department.name|default:'—' }}</td>
+                  <td class="text-secondary scan-count-cell">—</td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="3" class="text-center text-secondary py-4">No employees found.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="card-footer d-flex align-items-center">
+            <div class="dropdown clzst">
+              <a class="btn dropdown-toggle" data-bs-toggle="dropdown">
+                <span id="scan-page-count" class="me-1">8</span> records
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" onclick="setPageSize(8)">8 records</a>
+                <a class="dropdown-item" onclick="setPageSize(10)">10 records</a>
+                <a class="dropdown-item" onclick="setPageSize(20)">20 records</a>
+                <a class="dropdown-item" onclick="setPageSize(40)">40 records</a>
+              </div>
+            </div>
+            <ul class="pagination m-0 ms-auto" id="scan-pagination"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      // ── State ──────────────────────────────────────────────────────────────────
+      let _allCaptures     = []   // all captures for currently open employee
+      let _currentEmpId    = null
+      let _captureModalPage   = 1
+      let _captureModalSize   = 10
+      let _filterStart     = null // Date object
+      let _filterEnd       = null // Date object
+      let _captureModalEl  = null
+      let _imageModalEl    = null
+
+      // ── Date range — default current month ────────────────────────────────────
+      const _today    = new Date()
+      const _monthStart = new Date(_today.getFullYear(), _today.getMonth(), 1)
+
+      function _fmtDate(d) {
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+      }
+      function _fmtDisplay(d) {
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      }
+
+      _filterStart = _monthStart
+      _filterEnd   = _today
+
+      // ── Daterangepicker init ───────────────────────────────────────────────────
+      $('#scan-daterange').daterangepicker({
+        startDate: moment(_filterStart),
+        endDate:   moment(_filterEnd),
+        maxDate: moment(),
+        locale:    { format: 'MMM D, YYYY' },
+        ranges: {
+          'Today':        [moment(), moment()],
+          'This Week':    [moment().startOf('isoWeek'), moment()],
+          'This Month':   [moment().startOf('month'),   moment()],
+          'Last Month':   [moment().subtract(1,'month').startOf('month'),
+                          moment().subtract(1,'month').endOf('month')],
+        }
+      }, function(start, end) {
+        _filterStart = start.toDate()
+        _filterEnd   = end.toDate()
+        _loadSummary()
+      })
+
+      // ── Row click → open capture modal ────────────────────────────────────────
+      document.getElementById('scan-emp-tbody').addEventListener('click', async function(e) {
+        const row = e.target.closest('.scan-emp-row')
+        if (!row) return
+
+        const empId   = row.dataset.employeeId
+        const empName = row.dataset.name
+        const startIso = _fmtDate(_filterStart)
+        const endIso   = _fmtDate(_filterEnd)
+
+        document.getElementById('capture-emp-name').textContent = empName
+        document.getElementById('capture-date-range-label').textContent =
+          `${_fmtDisplay(_filterStart)} — ${_fmtDisplay(_filterEnd)}`
+
+        tabler.Modal.getOrCreateInstance(
+          document.getElementById('captureModal')
+        ).show()
+
+        const tbody = document.getElementById('capture-modal-body')
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-secondary py-3">Loading…</td></tr>`
+        document.getElementById('capture-count-label').textContent = ''
+
+        try {
+          const res = await fetch(`/scan-captures/data/${empId}/?date_from=${startIso}&date_to=${endIso}`)
+          if (!res.ok) {
+            throw new Error(`Server returned ${res.status}`)
+          }
+          const data = await res.json()
+          _currentEmpId = empId
+          _allCaptures = []
+          ;(data.days || []).forEach(day => {
+            day.captures.forEach(c => {
+              _allCaptures.push({ date: day.date, ...c })
+            })
+          })
+          document.getElementById('capture-count-label').textContent =
+            `${_allCaptures.length} capture${_allCaptures.length !== 1 ? 's' : ''}`
+          _captureModalPage = 1
+          _renderCaptureModal()
+        } catch (err) {
+          console.error('Scan capture fetch error:', err)
+          tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-3">Failed to load captures.</td></tr>`
+        }
+      })
+
+      function _renderCaptureModal() {
+        const tbody = document.getElementById('capture-modal-body')
+        if (!_allCaptures.length) {
+          tbody.innerHTML = `<tr><td colspan="4" class="text-center text-secondary py-4">
+            No captures found for this period.</td></tr>`
+          document.getElementById('capture-modal-pagination').innerHTML = ''
+          return
+        }
+
+        const empName = document.getElementById('capture-emp-name').textContent
+        const start   = (_captureModalPage - 1) * _captureModalSize
+        const slice   = _allCaptures.slice(start, start + _captureModalSize)
+
+        tbody.innerHTML = slice.map(c => `
+          <tr>
+            <td>${c.date}</td>
+            <td>${c.time}</td>
+            <td>
+              <span class="badge ${c.action === 'Time In' ? 'bg-success-lt text-success' : 'bg-blue-lt text-blue'}">
+                ${c.action}
+              </span>
+            </td>
+            <td>
+              <button class="btn btn-sm btn-primary btn-view-capture"
+                      data-url="${c.image_url}"
+                      data-date="${c.date}"
+                      data-time="${c.time}"
+                      data-action="${c.action}"
+                      data-name="${empName}">
+                View
+              </button>
+            </td>
+          </tr>`).join('')
+
+        _renderCapturePagination()
+      }
+
+      function _buildPageList(cur, total) {
+        const nums   = new Set([1, total, cur, cur - 1, cur + 1].filter(n => n >= 1 && n <= total))
+        const sorted = [...nums].sort((a, b) => a - b)
+        const out = []; let prev = 0
+        for (const n of sorted) {
+          if (n - prev > 1) out.push('…')
+          out.push(n)
+          prev = n
+        }
+        return out
+      }
+
+      function _renderCapturePagination() {
+        const total = Math.ceil(_allCaptures.length / _captureModalSize)
+        const ul    = document.getElementById('capture-modal-pagination')
+        ul.innerHTML = ''
+        if (total <= 1) {
+          const li = document.createElement('li')
+          li.className = 'page-item active'
+          li.innerHTML = '<a class="page-link">1</a>'
+          ul.appendChild(li)
+          return
+        }
+        _buildPageList(_captureModalPage, total).forEach(item => {
+          const li = document.createElement('li')
+          if (item === '…') {
+            li.className = 'page-item disabled'
+            li.innerHTML = '<a class="page-link">…</a>'
+          } else {
+            li.className = 'page-item' + (item === _captureModalPage ? ' active' : '')
+            li.innerHTML = `<a class="page-link" style="cursor:pointer">${item}</a>`
+            li.querySelector('a').addEventListener('click', () => { _captureModalPage = item; _renderCaptureModal() })
+          }
+          ul.appendChild(li)
+        })
+      }
+
+      function setModalPageSize(n) {
+        _captureModalSize = n
+        document.getElementById('capture-modal-page-count').textContent = n
+        _captureModalPage = 1
+        _renderCaptureModal()
+      }
+
+      // ── View button → close capture modal, open image modal ───────────────────
+      document.getElementById('capture-modal-body').addEventListener('click', function(e) {
+        const btn = e.target.closest('.btn-view-capture')
+        if (!btn) return
+
+        document.getElementById('image-modal-title').textContent =
+          `Scanned Photo — ${btn.dataset.name}`
+        document.getElementById('image-modal-meta').textContent =
+          `${btn.dataset.date}  ·  ${btn.dataset.time}  ·  ${btn.dataset.action}`
+        document.getElementById('image-modal-img').src = btn.dataset.url
+
+        // Close capture modal first, then open image modal
+        const captureModal = tabler.Modal.getInstance(document.getElementById('captureModal'))
+        captureModal.hide()
+
+        document.getElementById('captureModal').addEventListener('hidden.bs.modal', function _onHide() {
+          document.getElementById('captureModal').removeEventListener('hidden.bs.modal', _onHide)
+          tabler.Modal.getOrCreateInstance(document.getElementById('imageModal')).show()
+        })
+      })
+
+      // ── Back button → close image modal, reopen capture modal ─────────────────
+      document.getElementById('image-modal-back').addEventListener('click', function() {
+        const imageModal = tabler.Modal.getInstance(document.getElementById('imageModal'))
+        imageModal.hide()
+
+        document.getElementById('imageModal').addEventListener('hidden.bs.modal', function _onHide() {
+          document.getElementById('imageModal').removeEventListener('hidden.bs.modal', _onHide)
+          tabler.Modal.getOrCreateInstance(document.getElementById('captureModal')).show()
+        })
+      })
+
+      async function _loadSummary() {
+        const startIso = _fmtDate(_filterStart)
+        const endIso   = _fmtDate(_filterEnd)
+
+        try {
+          const res  = await fetch(`/scan-captures/summary/?date_from=${startIso}&date_to=${endIso}`)
+          const data = await res.json()
+          const counts = data.counts || {}
+
+          document.querySelectorAll('.scan-emp-row').forEach(row => {
+            const empId   = row.dataset.employeeId
+            const countEl = row.querySelector('.scan-count-cell')
+            const total   = counts[empId] || 0
+
+            if (total > 0) {
+              countEl.textContent = `${total} capture${total !== 1 ? 's' : ''}`
+              countEl.classList.remove('text-secondary')
+            } else {
+              countEl.textContent = '—'
+              countEl.classList.add('text-secondary')
+            }
+          })
+        } catch {
+          // silently fail — counts stay as —
+        }
+      }
+      _loadSummary()
+
+    </script>
+    <script>
+      initTableController({
+        searchId:    'scan-search',
+        pageCountId: 'scan-page-count',
+        paginId:     'scan-pagination',
+        rowSelector: '.scan-emp-row',
+        defaultSize: 8,
+        setFnName:   'setPageSize',
+      });
+    </script>
+    <script src="{% static 'js/tours/scanner/scan-capture.js' %}"></script>
+{% endblock %}

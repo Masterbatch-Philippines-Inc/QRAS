@@ -4,7 +4,7 @@ from datetime import date, datetime, time, timedelta
 from apps.qras.models.employee import (
     EmployeeGroupMembership
 )
-from apps.qras.models.management import BREAK_HOURS
+from apps.qras.models.schedules import BREAK_HOURS
 from apps.qras.models.attendance import (
     Attendance, 
     AttendanceStatus,

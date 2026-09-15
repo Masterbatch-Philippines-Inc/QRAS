@@ -1,0 +1,66 @@
+{% load static %}
+  <!-- ═══════════════════════════════════════════
+      MODAL — Emp List
+  ═══════════════════════════════════════════ -->
+  <div class="modal modal-blur fade" id="employeesListModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-centered modal-dialog-scrollable" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="employeesListModalTitle">Employees</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-0">
+          <table class="table table-vcenter card-table mb-0">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th id="employeesListSubCol">—</th>
+              </tr>
+            </thead>
+            <tbody id="employeesListBody">
+              <tr>
+                <td colspan="2" class="text-center text-secondary py-4">
+                  <span class="spinner-border spinner-border-sm"></span> Loading…
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost-secondary me-auto" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function loadEmployeesList(url, title, subColLabel) {
+      const hideSubCol = !subColLabel;
+      document.getElementById('employeesListModalTitle').textContent = title;
+      document.getElementById('employeesListSubCol').closest('th').style.display = hideSubCol ? 'none' : '';
+      document.getElementById('employeesListSubCol').textContent = subColLabel || '';
+      document.getElementById('employeesListBody').innerHTML =
+        '<tr><td colspan="2" class="text-center text-secondary py-4"><span class="spinner-border spinner-border-sm"></span> Loading…</td></tr>';
+
+      fetch(url)
+        .then(r => r.json())
+        .then(data => {
+          const tbody = document.getElementById('employeesListBody');
+          if (!data.employees.length) {
+            tbody.innerHTML = '<tr><td colspan="2" class="text-center text-secondary py-4">No employees found.</td></tr>';
+            return;
+          }
+          const key = subColLabel === 'Position' ? 'position' : 'department';
+          tbody.innerHTML = data.employees.map(e => `
+            <tr>
+              <td class="fw-medium">${e.name}</td>
+              ${!hideSubCol ? `<td class="text-secondary">${e[key]}</td>` : ''}
+            </tr>
+          `).join('');
+        })
+        .catch(() => {
+          document.getElementById('employeesListBody').innerHTML =
+            '<tr><td colspan="2" class="text-center text-danger py-4">Failed to load.</td></tr>';
+        });
+    }
+  </script>

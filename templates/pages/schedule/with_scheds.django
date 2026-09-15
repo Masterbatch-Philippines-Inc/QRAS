@@ -1,0 +1,1175 @@
+{% extends 'base.django' %}
+{% load static %}
+{% block content %}
+    <div class="page-wrapper">
+      {% if dept_warning %}
+      <div class="container-xl mt-4">
+        <div class="alert alert-warning d-flex gap-2 align-items-center">
+          <i class="ti ti-alert-triangle flex-shrink-0"></i>
+          Your account is not assigned to a department. Contact your administrator to get access.
+        </div>
+      </div>
+      {% endif %}
+      <div class="container-xl mt-5">
+        <div class="d-flex align-items-center justify-content-between" style="margin-bottom:.35rem;">
+          <h2 class="mb-0">Management</h2>
+          <button id="schedules-btn-help-tour" class="btn btn-sm btn-ghost-secondary" title="Schedule Records page tour">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            &nbsp;Need Help
+          </button>
+        </div>
+        <ol class="breadcrumb text-secondary" style="margin: 0 0 1rem 0;">
+          <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+          <li class="breadcrumb-item active">Schedule Records</li>
+        </ol>
+
+        <div class="row g-3">
+
+          <!-- ─── Schedule Table ─── -->
+          <div class="col-md-7">
+            <div class="card">
+              <div class="card-table">
+                <div class="card-header">
+                  <div class="row w-full">
+                    <div class="col">
+                      <h3 class="card-title mb-0">Shift Schedules</h3>
+                      <p class="text-secondary m-0" style="font-size:13px;">New schedule to an employee will not affect their existing logs.</p>
+                    </div>
+                    <div class="col-md-auto col-sm-12">
+                      <div class="ms-auto d-flex flex-wrap btn-list">
+                        <div class="input-group input-group-flat w-auto">
+                          <span class="input-group-text">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                              fill="none" stroke="currentColor" stroke-width="2"
+                              stroke-linecap="round" stroke-linejoin="round">
+                              <circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/>
+                            </svg>
+                          </span>
+                          <input id="schedule-search-input" type="text" class="form-control" autocomplete="off" placeholder="Search schedule…" />
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-auto">
+                      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEditscheduleModal" id="btn-add-schedule">
+                        New Schedule
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-vcenter table-bordered" id="schedule-table">
+                    <thead>
+                      <tr>
+                        <th>Schedule</th>
+                        <th>Shift</th>
+                        <th>Covered Dates</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for sched in schedules %}
+                      <tr class="schedules-row">
+                        <td>
+                          <div class="fw-semibold">{{ sched.name }}</div>
+                          <div class="text-secondary" style="font-size:12px;">
+                            {% if sched.created_by %}
+                              {% if sched.created_by.role and sched.created_by.role.name == 'Administrator' %}
+                                IT Administrator
+                              {% else %}
+                                {{ sched.created_by.get_full_name }} &middot; {{ sched.created_by.department.name|default:'No Department' }}
+                              {% endif %}
+                            {% else %}
+                              —
+                            {% endif %}
+                          </div>
+                        </td>
+                        <td>
+                          <div class="fw-semibold">
+                            {{ sched.shift_start|time:"gA" }} - {{ sched.shift_end|time:"gA" }}
+                          </div>
+                          <div>
+                            {% if sched.crosses_midnight %}
+                            <span class="badge bg-blue-lt text-blue" style="font-size:12px;">Overnight</span>
+                            {% endif %}
+                          </div>
+                        </td>
+                        <td>
+                          {% if sched.specific_dates %}
+                          <a href="#" class="btn-show-sched-dates text-primary"
+                             data-id="{{ sched.id }}"
+                             data-name="{{ sched.name }}"
+                             data-dates="{{ sched.specific_dates_json }}"
+                             data-bs-toggle="modal"
+                             data-bs-target="#schedDatesCalendarModal">
+                            {{ sched.specific_dates|length }} date{{ sched.specific_dates|length|pluralize }}
+                          </a>
+                          {% else %}
+                          <span class="text-secondary">—</span>
+                          {% endif %}
+                        </td>
+                        <td>
+                          {% if not sched.is_active %}
+                          <span class="badge bg-danger-lt text-danger">Inactive</span>
+                          {% else %}
+                          <span class="badge bg-success-lt text-success">Active</span>
+                          {% endif %}
+                        </td>
+                        <td>
+                          <div class="d-flex gap-2">
+                            {% if is_admin %}
+                            <button class="btn btn-sm btn-ghost-danger btn-toggle-schedule"
+                                    data-id="{{ sched.id }}"
+                                    data-name="{{ sched.name }}"
+                                    data-active="{{ sched.is_active|yesno:'true,false' }}">
+                              {% if not sched.is_active %}Restore{% else %}Deactivate{% endif %}
+                            </button>
+                            {% endif %}
+                            <button class="btn btn-sm btn-primary btn-edit-schedule"
+                                    data-id="{{ sched.id }}"
+                                    data-name="{{ sched.name }}"
+                                    data-shift-start="{{ sched.shift_start|time:'H:i' }}"
+                                    data-shift-end="{{ sched.shift_end|time:'H:i' }}"
+                                    data-halfday="{{ sched.halfday_threshold }}"
+                                    data-crosses-midnight="{{ sched.crosses_midnight|yesno:'true,false' }}"
+                                    data-is-active="{{ sched.is_active|yesno:'true,false' }}"
+                                    data-is-global="{{ sched.is_global|yesno:'true,false' }}"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#addEditscheduleModal"
+                                    data-rest-days="{{ sched.rest_days|default:'[]' }}"
+                                    data-specific-dates="{{ sched.specific_dates_json }}">
+                              Edit
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                      {% empty %}
+                      <tr><td colspan="6" class="text-center text-secondary py-4">No schedules found.</td></tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+                <div class="card-footer d-flex align-items-center">
+                  <div class="dropdown clzst">
+                    <a class="btn dropdown-toggle" data-bs-toggle="dropdown">
+                      <span id="schedule-main-page-count" class="me-1">8</span> records
+                    </a>
+                    <div class="dropdown-menu">
+                      <a class="dropdown-item" onclick="setPageSize(8)">8 records</a>
+                      <a class="dropdown-item" onclick="setPageSize(10)">10 records</a>
+                      <a class="dropdown-item" onclick="setPageSize(20)">20 records</a>
+                      <a class="dropdown-item" onclick="setPageSize(40)">40 records</a>
+                    </div>
+                  </div>
+                  <ul class="pagination m-0 ms-auto" id="schedule-pagination"></ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ─── Assign Schedule ─── -->
+          <div class="col-md-5">
+            <div class="card">
+              <div class="card-header">
+                <div class="col">
+                  <h3 class="card-title mb-0">Assign Schedule</h3>
+                  <p class="text-secondary m-0" style="font-size:13px;">Assign a schedule to one or more employees.</p>
+                </div>
+              </div>
+              <div class="card-body">
+
+                <div class="mb-3">
+                  <label class="form-label required">Schedule</label>
+                  <select id="assign-schedule-select" class="form-select">
+                    <option value="">— Select schedule —</option>
+                    {% for sched in active_schedules %}
+                    <option value="{{ sched.id }}">{{ sched.name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label required">Employees</label>
+                  <div class="d-flex gap-2 mb-2" id="btn-tour-select-all">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-select-all">Select All</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-deselect-all">Deselect All</button>
+                  </div>
+                  <div class="input-group input-group-flat mb-2">
+                    <span class="input-group-text">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/>
+                      </svg>
+                    </span>
+                    <input type="text" id="employee-filter" class="form-control form-control-sm" placeholder="Filter anything…" />
+                  </div>
+                  <div id="employee-list" style="max-height:300px; overflow-y:auto; border:1px solid var(--tblr-border-color); border-radius:4px;">
+                    <table class="table table-sm table-vcenter mb-0">
+                      <thead>
+                        <tr>
+                          <th></th>
+                          <th>Employee</th>
+                          <th>Schedule</th>
+                          <th class="text-center">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for emp in employees %}
+                        <tr class="employee-item"
+                            data-search="{{ emp.last_name }} {{ emp.first_name }} {{ emp.department.name|default:'' }} {{ emp.position.title|default:'' }} {% if emp.active_schedules %}{{ emp.active_schedules.0.schedule.name }}{% else %}unassigned{% endif %}">
+                          <td class="w-1 ps-2">
+                            <input type="checkbox" class="form-check-input emp-checkbox m-0" value="{{ emp.employee_id }}" />
+                          </td>
+                          <td>
+                            <div class="fw-medium" style="font-size:13px;">{{ emp.last_name }}, {{ emp.first_name }}</div>
+                            <div class="text-secondary" style="font-size:11px;">{{ emp.position }}</div>
+                          </td>
+                          <td>
+                            {% if emp.active_schedules %}
+                              <div class="d-flex align-items-center">
+                                <em class="text-secondary" style="font-size:13px;">{{ emp.active_schedules.0.schedule.name }}</em>
+                              </div>
+                            {% endif %}
+                          </td>
+                          <td class="text-end pe-2">
+                            {% if emp.active_schedules %}
+                              <button type="button"
+                                      class="btn btn-sm btn-ghost-danger btn-unassign"
+                                      data-bs-toggle="modal"
+                                      data-bs-target="#unassignScheduleModal"
+                                      data-employee-id="{{ emp.employee_id }}">
+                                Unassign
+                              </button>
+                            {% endif %}
+                          </td>
+                        </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="mt-1 text-secondary fw-bold">
+                    <span id="selected-count">0</span> selected
+                  </div>
+                  <div class="mt-1 text-secondary" style="font-size:12px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                      fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>  <span>Type <strong>unassigned</strong> to find employees with no schedule.</span>
+                  </div>
+                </div>
+
+                <div id="assign-alert" class="alert d-none mb-3"></div>
+
+                <button id="btn-assign" class="btn btn-primary w-100" disabled>Assign Schedule</button>
+
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <!-- ── Covered Dates Calendar Modal ─────────────────────────────── -->
+      <div class="modal modal-blur fade" id="schedDatesCalendarModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Covered Dates of <span id="cal-sched-name"></span> schedule</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <div id="sched-cal-nav" class="d-flex align-items-center justify-content-between mb-3">
+                <button type="button" class="btn btn-sm btn-ghost-secondary" id="cal-prev-month">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M15 6l-6 6l6 6" />
+                  </svg>
+                </button>
+                <span id="cal-month-label" class="fw-bold"></span>
+                <button type="button" class="btn btn-sm btn-ghost-secondary" id="cal-next-month">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M9 6l6 6l-6 6" />
+                  </svg>
+                </button>
+              </div>
+              <div id="sched-calendar-grid"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- ── Recompute Scope Modal (Schedules page assign) ──────────────── -->
+      <div class="modal modal-blur fade" id="assignRecomputeModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Assign Schedule</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <div id="arm-summary" class="mb-3 text-secondary" style="font-size:13px;"></div>
+
+              <label class="form-label">Recompute Scope</label>
+              <div class="d-flex flex-wrap gap-1 mb-2" id="arm-scope-btns">
+                <button type="button" class="btn btn-sm btn-ghost-secondary arm-scope-btn" data-scope="all">All Records</button>
+                <button type="button" class="btn btn-sm btn-ghost-secondary arm-scope-btn" data-scope="single_date">Single Date</button>
+                <button type="button" class="btn btn-sm btn-ghost-secondary arm-scope-btn" data-scope="date_range">Date Range</button>
+              </div>
+              <div id="arm-date-inputs" class="d-none d-flex flex-wrap gap-1 align-items-center mt-1">
+                <input type="hidden" id="arm-date-from" />
+                <input type="hidden" id="arm-date-to" />
+                <input type="text" id="arm-drp" class="form-control form-control-sm"
+                      style="max-width:240px;" placeholder="Select date…" autocomplete="off" readonly />
+              </div>
+              <div id="arm-alert" class="alert alert-danger d-none mt-2"></div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-ghost-secondary me-auto" data-bs-dismiss="modal">Cancel</button>
+              <button type="button" class="btn btn-primary" id="btn-arm-confirm" disabled>Confirm Assign</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+
+      document.getElementById('sched-crosses-midnight')?.addEventListener('change', function () {
+        const info = document.getElementById('sched-night-diff-info')
+        if (!info) return
+        info.classList.toggle('d-none', !this.checked)
+      })
+
+      // ── Schedule Modal — populate on edit ────────────────────────────────────────
+      document.getElementById('addEditscheduleModal')?.addEventListener('show.bs.modal', function (e) {
+        const btn = e.relatedTarget
+        const isEdit = btn && btn.classList.contains('btn-edit-schedule')
+
+        document.getElementById('scheduleModalTitle').textContent = isEdit ? 'Edit Schedule' : 'New Schedule'
+        document.getElementById('schedule-id').value        = isEdit ? btn.dataset.id        : ''
+        document.getElementById('sched-name').value         = isEdit ? btn.dataset.name       : ''
+        document.getElementById('sched-shift-start').value  = isEdit ? btn.dataset.shiftStart : ''
+        document.getElementById('sched-shift-end').value    = isEdit ? btn.dataset.shiftEnd   : ''
+        const crossesMidnight = isEdit ? btn.dataset.crossesMidnight === 'true' : false
+        document.getElementById('sched-crosses-midnight').checked = crossesMidnight
+        const ndInfo = document.getElementById('sched-night-diff-info')
+        if (ndInfo) ndInfo.classList.toggle('d-none', !crossesMidnight)
+
+        const isGlobalSched = isEdit ? btn.dataset.isGlobal === 'true' : false
+        const isGlobalChk = document.getElementById('sched-is-global')
+        if (isGlobalChk) isGlobalChk.checked = isGlobalSched
+
+        // Lock all fields if dept head is opening a global schedule
+        const isAdmin = {{ is_admin|yesno:'true,false' }}
+        const lockFields = isGlobalSched && !isAdmin
+        _spdLocked = lockFields
+
+        const lockTargets = [
+          'sched-name', 'sched-shift-start', 'sched-shift-end',
+          'sched-crosses-midnight', 'sched-is-active',
+        ]
+        lockTargets.forEach(id => {
+          const el = document.getElementById(id)
+          if (el) el.disabled = lockFields
+        })
+
+        // Dept heads always have is-active disabled regardless of global state
+        const isActiveEl = document.getElementById('sched-is-active')
+        if (isActiveEl && !isAdmin) isActiveEl.disabled = true
+        document.querySelectorAll('.rest-day-check, .spd-wd-btn, #spd-today, #spd-this-week, #spd-next-week, #spd-this-month, #spd-next-month, #spd-clear-all').forEach(el => {
+          el.disabled = lockFields
+        })
+        document.getElementById('btn-save-schedule').classList.toggle('d-none', lockFields)
+        document.getElementById('sched-is-active').checked        = isEdit ? btn.dataset.isActive === 'true'        : true
+        document.getElementById('sched-alert').classList.add('d-none')
+        document.querySelectorAll('.rest-day-check').forEach(cb => {
+          const restDays = isEdit ? JSON.parse(btn.dataset.restDays || '[]') : []
+          cb.checked = restDays.includes(parseInt(cb.value))
+        })
+
+        _spdYear  = new Date().getFullYear()
+        _spdMonth = new Date().getMonth()
+        // Populate specific dates chips
+        const savedDates = isEdit ? JSON.parse(btn.dataset.specificDates || '[]') : []
+        // If editing and dates exist, jump calendar to the month of the first date
+        if (savedDates.length) {
+          const first = new Date(savedDates[0] + 'T00:00:00')
+          _spdYear  = first.getFullYear()
+          _spdMonth = first.getMonth()
+        }
+        renderDateChips(savedDates)
+      })
+
+      document.getElementById('addEditscheduleModal')?.addEventListener('hide.bs.modal', function () {
+        _spdLocked = false
+      })
+
+      // ── Multi-date picker helpers ─────────────────────────────────────────────────
+      function getSchedDates() {
+        return [..._spdDates].sort()
+      }
+
+      let _spdYear  = new Date().getFullYear()
+      let _spdMonth = new Date().getMonth()
+      let _spdDates = new Set()
+
+      function _spdIso(y, m, d) {
+        return `${y}-${String(m + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
+      }
+
+      function renderDateChips(dates) {
+        _spdDates = new Set(dates)
+        _renderChips()
+        _renderSpdCalendar()
+      }
+
+      function _renderChips() {
+        const container = document.getElementById('sched-dates-list')
+        if (!container) return
+        container.innerHTML = ''
+        const MONTHS = ['January','February','March','April','May','June',
+                        'July','August','September','October','November','December']
+        const grouped = {}
+        ;[..._spdDates].sort().forEach(d => {
+          const key = d.slice(0, 7)
+          if (!grouped[key]) grouped[key] = []
+          grouped[key].push(d)
+        })
+        Object.entries(grouped).forEach(([monthKey, dates]) => {
+          const [y, m] = monthKey.split('-')
+          const header = document.createElement('div')
+          header.className = 'w-100 d-flex align-items-center gap-2 mt-1 mb-1'
+          header.innerHTML = `
+            <span class="text-secondary fw-medium" style="font-size:12px;">
+              ${MONTHS[parseInt(m) - 1]} ${y} &middot; ${dates.length} selected date${dates.length > 1 ? 's' : ''}
+            </span>
+            <a href="#" class="btn btn-sm btn-ghost-danger ms-auto spd-clear-month" data-month="${monthKey}">Clear All</a>`
+          container.appendChild(header)
+
+          const row = document.createElement('div')
+          row.className = 'd-flex flex-wrap gap-1 mb-1'
+          dates.forEach(d => {
+            const chip = document.createElement('span')
+            chip.className    = 'badge bg-blue-lt text-blue d-inline-flex align-items-center gap-1 sched-date-chip'
+            chip.dataset.date = d
+            chip.innerHTML    = `${d} <button type="button" class="btn-close btn-close" aria-label="Remove"></button>`
+            chip.querySelector('.btn-close').addEventListener('click', () => {
+              _spdDates.delete(d)
+              _renderChips()
+              _renderSpdCalendar()
+            })
+            row.appendChild(chip)
+          })
+          container.appendChild(row)
+        })
+        container.querySelectorAll('.spd-clear-month').forEach(a => {
+          a.addEventListener('click', e => {
+            e.preventDefault()
+            const mk = a.dataset.month
+            ;[..._spdDates].forEach(d => { if (d.startsWith(mk)) _spdDates.delete(d) })
+            _renderChips()
+            _renderSpdCalendar()
+          })
+        })
+      }
+
+      let _spdRangeAnchor = null
+      let _spdLocked = false
+
+      // ── Past date guard — comment this entire block to allow past date picks ──────
+      const _spdDisablePast = false // THIS LINE SUPPEND PAST DATE GUARDS if changed to TRUE
+      function _spdIsPast(iso) {
+        const today = new Date(); today.setHours(0, 0, 0, 0)
+        return new Date(iso + 'T00:00:00') < today
+      }
+      function _spdFilterPast(isos) {
+        if (!_spdDisablePast) return isos
+        return isos.filter(d => !_spdIsPast(d))
+      }
+      // ─────────────────────────────────────────────────────────────────────────────
+
+      function _renderSpdCalendar() {
+        const DAYS   = ['Su','Mo','Tu','We','Th','Fr','Sa']
+        const MONTHS = ['January','February','March','April','May','June',
+                        'July','August','September','October','November','December']
+        const label  = document.getElementById('spd-cal-label')
+        const grid   = document.getElementById('spd-cal-grid')
+        if (!label || !grid) return
+
+        label.textContent = `${MONTHS[_spdMonth]} ${_spdYear}`
+        const firstDay  = new Date(_spdYear, _spdMonth, 1).getDay()
+        const daysInMon = new Date(_spdYear, _spdMonth + 1, 0).getDate()
+
+        let html = '<table style="width:100%;table-layout:fixed;border-collapse:collapse;"><thead><tr>'
+        DAYS.forEach(d => {
+          html += `<th style="text-align:center;color:var(--tblr-secondary);padding:3px 0;">${d}</th>`
+        })
+        html += '</tr></thead><tbody><tr>'
+        for (let i = 0; i < firstDay; i++) html += '<td></td>'
+        let col = firstDay
+        for (let day = 1; day <= daysInMon; day++) {
+          const iso       = _spdIso(_spdYear, _spdMonth, day)
+          const hit       = _spdDates.has(iso)
+          const isPast    = typeof _spdIsPast === 'function' && _spdDisablePast && _spdIsPast(iso)
+          const isBlocked = _spdLocked || isPast
+          html += `<td style="text-align:center;padding:2px;">
+                  <button type="button" class="spd-day-btn" data-iso="${iso}" ${isBlocked ? 'disabled' : ''} style="
+                    width:28px;height:28px;border-radius:50%;border:none;
+                    cursor:${isBlocked ? 'default' : 'pointer'};
+                    background:${hit ? 'var(--tblr-primary)' : 'transparent'};
+                    color:${hit ? '#fff' : isPast ? 'var(--tblr-secondary)' : 'inherit'};
+                    font-weight:${hit ? '600' : '400'};
+                    opacity:${isBlocked ? '0.35' : '1'};
+                    transition:background .15s;">${day}</button></td>`
+          col++
+          if (col % 7 === 0 && day < daysInMon) html += '</tr><tr>'
+        }
+        const rem = (7 - (col % 7)) % 7
+        for (let i = 0; i < rem; i++) html += '<td></td>'
+        html += '</tr></tbody></table>'
+        grid.innerHTML = html
+
+        grid.querySelectorAll('.spd-day-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const iso = btn.dataset.iso
+            if (e.shiftKey && _spdRangeAnchor && _spdRangeAnchor !== iso) {
+              const a = new Date(_spdRangeAnchor + 'T00:00:00')
+              const b = new Date(iso + 'T00:00:00')
+              const start = a < b ? a : b
+              const end   = a < b ? b : a
+              const cur   = new Date(start)
+              while (cur <= end) {
+                const curIso = _spdIso(cur.getFullYear(), cur.getMonth(), cur.getDate())
+                if (!(typeof _spdIsPast === 'function' && _spdDisablePast && _spdIsPast(curIso)))
+                  _spdDates.add(curIso)
+                cur.setDate(cur.getDate() + 1)
+              }
+              _spdRangeAnchor = null
+            } else {
+              if (_spdDates.has(iso)) _spdDates.delete(iso)
+              else _spdDates.add(iso)
+              _spdRangeAnchor = iso
+            }
+            _renderChips()
+            _renderSpdCalendar()
+            _syncQuickBtns()
+          })
+        })
+
+        // Highlight active weekday toggle buttons
+        document.querySelectorAll('.spd-wd-btn').forEach(btn => {
+          const wd = parseInt(btn.dataset.wd)
+          const allInMonth = []
+          for (let day = 1; day <= daysInMon; day++) {
+            if (new Date(_spdYear, _spdMonth, day).getDay() === wd)
+              allInMonth.push(_spdIso(_spdYear, _spdMonth, day))
+          }
+          const allSelected = allInMonth.length > 0 && allInMonth.every(d => _spdDates.has(d))
+          btn.classList.toggle('btn-primary', allSelected)
+          btn.classList.toggle('btn-ghost-secondary', !allSelected)
+        })
+      }
+      _syncQuickBtns()
+
+      function _syncQuickBtns() {
+        const t = new Date()
+        const todayIso = _spdIso(t.getFullYear(), t.getMonth(), t.getDate())
+
+        // Today
+        const todayBtn = document.getElementById('spd-today')
+        if (todayBtn) {
+          const on = _spdDates.has(todayIso)
+          todayBtn.classList.toggle('btn-primary', on)
+          todayBtn.classList.toggle('btn-ghost-secondary', !on)
+        }
+
+        // This Week / Next Week
+        function weekIsos(offset) {
+          const mon = _getWeekMonday(offset)
+          return Array.from({length: 5}, (_, i) => {
+            const d = new Date(mon); d.setDate(mon.getDate() + i)
+            return _spdIso(d.getFullYear(), d.getMonth(), d.getDate())
+          })
+        }
+        const thisWeekIsos = weekIsos(0)
+        const nextWeekIsos = weekIsos(1)
+
+        const thisWeekBtn = document.getElementById('spd-this-week')
+        if (thisWeekBtn) {
+          const on = thisWeekIsos.every(d => _spdDates.has(d))
+          thisWeekBtn.classList.toggle('btn-primary', on)
+          thisWeekBtn.classList.toggle('btn-ghost-secondary', !on)
+        }
+
+        const nextWeekBtn = document.getElementById('spd-next-week')
+        if (nextWeekBtn) {
+          const on = nextWeekIsos.every(d => _spdDates.has(d))
+          nextWeekBtn.classList.toggle('btn-primary', on)
+          nextWeekBtn.classList.toggle('btn-ghost-secondary', !on)
+        }
+
+        // This Month (based on currently viewed calendar month)
+        const daysInMon = new Date(_spdYear, _spdMonth + 1, 0).getDate()
+        const monthIsos = Array.from({length: daysInMon}, (_, i) => _spdIso(_spdYear, _spdMonth, i + 1))
+        const thisMonthBtn = document.getElementById('spd-this-month')
+        if (thisMonthBtn) {
+          const on = monthIsos.every(d => _spdDates.has(d))
+          thisMonthBtn.classList.toggle('btn-primary', on)
+          thisMonthBtn.classList.toggle('btn-ghost-secondary', !on)
+        }
+
+        const nm = _spdMonth === 11 ? 0 : _spdMonth + 1
+        const ny = _spdMonth === 11 ? _spdYear + 1 : _spdYear
+        const daysInNext = new Date(ny, nm + 1, 0).getDate()
+        const nextMonthIsos = Array.from({length: daysInNext}, (_, i) => _spdIso(ny, nm, i + 1))
+        const nextMonthBtn = document.getElementById('spd-next-month')
+        if (nextMonthBtn) {
+          const on = nextMonthIsos.every(d => _spdDates.has(d))
+          nextMonthBtn.classList.toggle('btn-primary', on)
+          nextMonthBtn.classList.toggle('btn-ghost-secondary', !on)
+        }
+      }
+
+      // Calendar nav
+      document.getElementById('spd-cal-prev')?.addEventListener('click', () => {
+        _spdMonth--
+        if (_spdMonth < 0) { _spdMonth = 11; _spdYear-- }
+        _renderSpdCalendar()
+      })
+      document.getElementById('spd-cal-next')?.addEventListener('click', () => {
+        _spdMonth++
+        if (_spdMonth > 11) { _spdMonth = 0; _spdYear++ }
+        _renderSpdCalendar()
+      })
+
+      // Quick-select shortcuts
+      document.getElementById('spd-today')?.addEventListener('click', () => {
+        const t = new Date()
+        const iso = _spdIso(t.getFullYear(), t.getMonth(), t.getDate())
+        if (_spdDisablePast && _spdIsPast(iso)) return
+        if (_spdDates.has(iso)) _spdDates.delete(iso)
+        else _spdDates.add(iso)
+        _renderChips(); _renderSpdCalendar(); _syncQuickBtns()
+      })
+
+      function _getWeekMonday(offsetWeeks) {
+        const now = new Date()
+        const dow = now.getDay()
+        const monday = new Date(now)
+        monday.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1) + offsetWeeks * 7)
+        return monday
+      }
+
+      document.getElementById('spd-this-week')?.addEventListener('click', () => {
+        const mon = _getWeekMonday(0)
+        const targets = _spdFilterPast(Array.from({length: 6}, (_, i) => {
+          const d = new Date(mon); d.setDate(mon.getDate() + i)
+          return _spdIso(d.getFullYear(), d.getMonth(), d.getDate())
+        }))
+        if (!targets.length) return
+        const allIn = targets.every(d => _spdDates.has(d))
+        targets.forEach(d => allIn ? _spdDates.delete(d) : _spdDates.add(d))
+        _renderChips(); _renderSpdCalendar(); _syncQuickBtns()
+      })
+      document.getElementById('spd-next-week')?.addEventListener('click', () => {
+        const mon = _getWeekMonday(1)
+        const targets = _spdFilterPast(Array.from({length: 6}, (_, i) => {
+          const d = new Date(mon); d.setDate(mon.getDate() + i)
+          return _spdIso(d.getFullYear(), d.getMonth(), d.getDate())
+        }))
+        if (!targets.length) return
+        const allIn = targets.every(d => _spdDates.has(d))
+        targets.forEach(d => allIn ? _spdDates.delete(d) : _spdDates.add(d))
+        _renderChips(); _renderSpdCalendar(); _syncQuickBtns()
+      })
+      document.getElementById('spd-next-month')?.addEventListener('click', () => {
+        const nm = _spdMonth === 11 ? 0 : _spdMonth + 1
+        const ny = _spdMonth === 11 ? _spdYear + 1 : _spdYear
+        const daysInNext = new Date(ny, nm + 1, 0).getDate()
+        const targets = _spdFilterPast(Array.from({length: daysInNext}, (_, i) => _spdIso(ny, nm, i + 1)))
+        if (!targets.length) return
+        const allIn = targets.every(d => _spdDates.has(d))
+        targets.forEach(d => allIn ? _spdDates.delete(d) : _spdDates.add(d))
+        _renderChips(); _renderSpdCalendar(); _syncQuickBtns()
+      })
+      document.getElementById('spd-this-month')?.addEventListener('click', () => {
+        const daysInMon = new Date(_spdYear, _spdMonth + 1, 0).getDate()
+        const targets = _spdFilterPast(Array.from({length: daysInMon}, (_, i) => _spdIso(_spdYear, _spdMonth, i + 1)))
+        if (!targets.length) return
+        const allIn = targets.every(d => _spdDates.has(d))
+        targets.forEach(d => allIn ? _spdDates.delete(d) : _spdDates.add(d))
+        _renderChips(); _renderSpdCalendar(); _syncQuickBtns()
+      })
+      document.getElementById('spd-clear-all')?.addEventListener('click', () => {
+        _spdDates.clear(); _renderChips(); _renderSpdCalendar(); _syncQuickBtns()
+      })
+
+      // Weekday toggles
+      document.querySelectorAll('.spd-wd-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const wd = parseInt(btn.dataset.wd)
+          const daysInMon = new Date(_spdYear, _spdMonth + 1, 0).getDate()
+          const raw = []
+          for (let day = 1; day <= daysInMon; day++) {
+            if (new Date(_spdYear, _spdMonth, day).getDay() === wd)
+              raw.push(_spdIso(_spdYear, _spdMonth, day))
+          }
+          const targets = _spdFilterPast(raw)
+          if (!targets.length) return
+          const allIn = targets.every(d => _spdDates.has(d))
+          targets.forEach(d => allIn ? _spdDates.delete(d) : _spdDates.add(d))
+          _renderChips(); _renderSpdCalendar(); _syncQuickBtns()
+        })
+      })
+      function getSelectedRestDays() {
+        return [...document.querySelectorAll('.rest-day-check:checked')]
+          .map(cb => parseInt(cb.value))
+      }
+
+      // ── Save schedule ─────────────────────────────────────────────────────────────
+      document.getElementById('btn-save-schedule')?.addEventListener('click', async function () {
+        const alertEl = document.getElementById('sched-alert')
+        const payload = {
+          id:               document.getElementById('schedule-id').value || null,
+          name:             document.getElementById('sched-name').value.trim(),
+          is_global:        document.getElementById('sched-is-global')?.checked ?? false,
+          shift_start:      document.getElementById('sched-shift-start').value,
+          shift_end:        document.getElementById('sched-shift-end').value,
+          //night_diff_start: document.getElementById('sched-nd-start').value || null,
+          //night_diff_end:   document.getElementById('sched-nd-end').value   || null,
+          crosses_midnight: document.getElementById('sched-crosses-midnight').checked,
+          is_active:        document.getElementById('sched-is-active').checked,
+          rest_days:        getSelectedRestDays(),
+          specific_dates:   getSchedDates(),
+        }
+
+        // Required fields check
+        if (!payload.name) {
+          showAlert('Schedule name is required.')
+          return
+        }
+        if (!payload.shift_start || !payload.shift_end) {
+          showAlert('Shift start and shift end are required.')
+          return
+        }
+        if (payload.rest_days.length === 0) {
+          showAlert('Please select at least one rest day.')
+          return
+        }
+        // Night diff — both or neither
+        if (
+          (payload.night_diff_start && !payload.night_diff_end) ||
+          (!payload.night_diff_start && payload.night_diff_end)
+        ) {
+          showAlert('Please fill in both night diff start and end, or leave both empty.')
+          return
+        }
+
+        function showAlert(msg) {
+          alertEl.className   = 'alert alert-danger mt-3'
+          alertEl.textContent = msg
+          alertEl.classList.remove('d-none')
+        }
+
+        this.disabled  = true
+        this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving…'
+
+        try {
+          const res  = await fetch("{% url 'schedule-save' %}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify(payload),
+          })
+          const data = await res.json()
+          if (data.error) {
+            alertEl.className   = 'alert alert-danger mt-3'
+            alertEl.textContent = data.error
+            alertEl.classList.remove('d-none')
+          } else {
+            alert("Inputs saved")
+            location.reload()
+          }
+        } catch (e) {
+          alert(e.message)
+          console.error('Schedule save error:', e)
+        }
+        this.disabled    = false
+        this.textContent = 'Save Schedule'
+      })
+
+      // ── Delete schedule ───────────────────────────────────────────────────────────
+      document.addEventListener('click', async function (e) {
+        const btn = e.target.closest('.btn-toggle-schedule')
+        if (!btn) return
+        const isActive = btn.dataset.active === 'true'
+        const label    = isActive ? 'deactivate' : 'restore'
+        if (!confirm(`Are you sure you want to ${label} "${btn.dataset.name}"?`)) return
+
+        const method   = isActive ? 'DELETE' : 'POST'
+        const url      = isActive
+          ? `/schedules/${btn.dataset.id}/delete/`
+          : `{% url 'schedule-restore' 0 %}`.replace('0', btn.dataset.id)
+
+        const res  = await fetch(url, { method, headers: { 'X-CSRFToken': getCookie('csrftoken') } })
+        const data = await res.json()
+        if (data.status === 'deleted' || data.status === 'restored') {
+          alert(data.message)
+          location.reload()
+        } else {
+          alert(data.error || `${label} failed.`)
+        }
+      })
+
+      // ── Employee filter + select all ──────────────────────────────────────────────
+      document.getElementById('employee-filter')?.addEventListener('input', function () {
+        const q = this.value.toLowerCase()
+        document.querySelectorAll('.employee-item').forEach(item => {
+          if (item.dataset.search.toLowerCase().includes(q)) {
+            item.style.removeProperty('display')
+          } else {
+            item.style.setProperty('display', 'none', 'important')
+          }
+        })
+      })
+
+      document.getElementById('btn-select-all')?.addEventListener('click', () => {
+        document.querySelectorAll('.emp-checkbox').forEach(cb => {
+          if (cb.closest('.employee-item').style.getPropertyValue('display') !== 'none') cb.checked = true
+        })
+        updateCount()
+      })
+
+      document.getElementById('btn-deselect-all')?.addEventListener('click', () => {
+        document.querySelectorAll('.emp-checkbox').forEach(cb => cb.checked = false)
+        updateCount()
+      })
+
+      document.querySelectorAll('.emp-checkbox').forEach(cb => cb.addEventListener('change', updateCount))
+
+      function updateCount() {
+        const n = document.querySelectorAll('.emp-checkbox:checked').length
+        document.getElementById('selected-count').textContent = n
+        document.getElementById('btn-assign').disabled = n === 0 || !document.getElementById('assign-schedule-select').value
+      }
+
+      document.getElementById('assign-schedule-select')?.addEventListener('change', updateCount)
+
+      // ── Schedules page assign — recompute modal wiring ────────────────────────
+      let _armEmpIds   = []
+      let _armSchedId  = null
+      let _armScope    = null
+      // const _armToday  = new Date().toISOString().split('T')[0]
+      // document.getElementById('arm-date-from').max = _armToday
+      // document.getElementById('arm-date-to').max   = _armToday
+
+      document.getElementById('btn-assign')?.addEventListener('click', function () {
+        const schedId = document.getElementById('assign-schedule-select').value
+        const empIds  = [...document.querySelectorAll('.emp-checkbox:checked')].map(cb => parseInt(cb.value))
+
+        if (!schedId || empIds.length === 0) return
+
+        // Check if any selected employee already has a schedule shown in the table
+        const hasPrior = empIds.some(id => {
+          const cb  = document.querySelector(`.emp-checkbox[value="${id}"]`)
+          const row = cb?.closest('tr.employee-item')
+          return row?.cells[2]?.textContent.trim() !== ''
+        })
+
+        _armEmpIds  = empIds
+        _armSchedId = schedId
+        _armScope   = null
+
+        // Reset modal state
+        document.querySelectorAll('.arm-scope-btn').forEach(b => {
+          b.classList.remove('btn-primary')
+          b.classList.add('btn-ghost-secondary')
+        })
+        document.getElementById('arm-date-inputs').classList.add('d-none')
+        document.getElementById('arm-date-from').value = ''
+        document.getElementById('arm-date-to').value   = ''
+        const _existingDrp = $('#arm-drp')
+        if (_existingDrp.data('daterangepicker')) _existingDrp.data('daterangepicker').remove()
+        $('#arm-drp').val('')
+        document.getElementById('arm-alert').classList.add('d-none')
+        document.getElementById('btn-arm-confirm').disabled = true
+
+        const schedName = document.getElementById('assign-schedule-select').selectedOptions[0].text
+        const summary   = hasPrior
+          ? `${empIds.length} employee(s) selected — some have existing schedules. Choose which records to recompute under <strong>${schedName}</strong>.`
+          : `${empIds.length} employee(s) selected will be assigned to <strong>${schedName}</strong>. No prior schedules detected — choose recompute scope for any existing attendance records.`
+        document.getElementById('arm-summary').innerHTML = summary
+
+        tabler.Modal.getOrCreateInstance(document.getElementById('assignRecomputeModal')).show()
+      })
+
+      document.querySelectorAll('.arm-scope-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+          _armScope = this.dataset.scope
+          document.querySelectorAll('.arm-scope-btn').forEach(b => {
+            b.classList.remove('btn-primary')
+            b.classList.add('btn-ghost-secondary')
+          })
+          this.classList.remove('btn-ghost-secondary')
+          this.classList.add('btn-primary')
+
+          const dateWrap = document.getElementById('arm-date-inputs')
+          const drp      = $('#arm-drp')
+          const fromHid  = document.getElementById('arm-date-from')
+          const toHid    = document.getElementById('arm-date-to')
+
+          // Destroy previous picker instance on mode switch
+          if (drp.data('daterangepicker')) drp.data('daterangepicker').remove()
+          fromHid.value    = ''
+          toHid.value      = ''
+          drp.val('')
+
+          if (_armScope === 'all') {
+            dateWrap.classList.add('d-none')
+          } else {
+            dateWrap.classList.remove('d-none')
+            const isSingle = (_armScope === 'single_date')
+            drp.daterangepicker({
+              singleDatePicker: isSingle,
+              autoUpdateInput:  false,
+              maxDate:          moment(),
+              locale:           { cancelLabel: 'Clear' },
+            })
+            drp[0].placeholder = isSingle ? 'Pick a date' : 'From — To'
+
+            drp.on('apply.daterangepicker', function (ev, picker) {
+              if (isSingle) {
+                drp.val(picker.startDate.format('MMM D, YYYY'))
+                fromHid.value = picker.startDate.format('YYYY-MM-DD')
+                toHid.value   = ''
+              } else {
+                drp.val(picker.startDate.format('MMM D, YYYY') + ' — ' + picker.endDate.format('MMM D, YYYY'))
+                fromHid.value = picker.startDate.format('YYYY-MM-DD')
+                toHid.value   = picker.endDate.format('YYYY-MM-DD')
+              }
+            })
+
+            drp.on('cancel.daterangepicker', function () {
+              drp.val('')
+              fromHid.value = ''
+              toHid.value   = ''
+            })
+          }
+
+          document.getElementById('btn-arm-confirm').disabled = false
+        })
+      })
+
+      document.getElementById('btn-arm-confirm')?.addEventListener('click', async function () {
+        const alertEl = document.getElementById('arm-alert')
+        alertEl.classList.add('d-none')
+
+        const fromVal = document.getElementById('arm-date-from').value
+        const toVal   = document.getElementById('arm-date-to').value
+
+        if (_armScope === 'single_date' && !fromVal) {
+          alertEl.textContent = 'Please pick a date.'
+          alertEl.classList.remove('d-none')
+          return
+        }
+        if (_armScope === 'date_range' && (!fromVal || !toVal)) {
+          alertEl.textContent = 'Please select a date range.'
+          alertEl.classList.remove('d-none')
+          return
+        }
+
+        this.disabled  = true
+        this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Assigning…'
+
+        const assignAlertEl = document.getElementById('assign-alert')
+        const schedName     = document.getElementById('assign-schedule-select').selectedOptions[0].text
+
+        try {
+          // Fire one request per employee so each gets its own recompute event audit row
+          let successCount = 0
+          for (const empId of _armEmpIds) {
+            const payload = {
+              employee_id:     empId,
+              schedule_id:     _armSchedId,
+              recompute_scope: _armScope,
+            }
+            if (_armScope === 'single_date') payload.recompute_date = fromVal
+            if (_armScope === 'date_range')  { payload.recompute_from = fromVal; payload.recompute_to = toVal }
+
+            const res  = await fetch("{% url 'schedule-assign-recompute' %}", {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+              body: JSON.stringify(payload),
+            })
+            const data = await res.json()
+            if (data.status === 'assigned') {
+              successCount++
+              // Patch the row in-place
+              const cb  = document.querySelector(`.emp-checkbox[value="${empId}"]`)
+              const row = cb?.closest('tr.employee-item')
+              if (row) {
+                const schedCell = row.cells[2]
+                if (schedCell) {
+                  schedCell.innerHTML = `<div class="d-flex align-items-center"><em class="text-secondary" style="font-size:13px;">${schedName}</em></div>`
+                }
+                const actionCell = row.cells[3]
+                if (actionCell) {
+                  actionCell.innerHTML = `
+                    <button type="button"
+                            class="btn btn-sm btn-ghost-danger btn-unassign"
+                            data-bs-toggle="modal"
+                            data-bs-target="#unassignScheduleModal"
+                            data-employee-id="${empId}">
+                      Unassign
+                    </button>`
+                }
+              }
+            }
+          }
+
+          tabler.Modal.getOrCreateInstance(document.getElementById('assignRecomputeModal')).hide()
+          document.querySelectorAll('.emp-checkbox').forEach(cb => cb.checked = false)
+          updateCount()
+
+          assignAlertEl.className   = 'alert alert-success mb-3'
+          assignAlertEl.innerHTML   = `${successCount} employee(s) assigned to "${schedName}".`
+          assignAlertEl.classList.remove('d-none')
+
+        } catch (err) {
+          alertEl.textContent = 'Assignment failed. Please try again.'
+          alertEl.classList.remove('d-none')
+        }
+
+        this.disabled    = false
+        this.textContent = 'Confirm Assign'
+      })
+
+      // ── Unassign schedule ───────────────────────────────────────────────────────────
+
+      document.addEventListener('click', async function (e) {
+        const btn = e.target.closest('.btn-unassign')
+        if (!btn) return
+        e.preventDefault()
+        e.stopPropagation()
+
+        const empId = btn.dataset.employeeId
+        const res   = await fetch(`{% url 'schedule-unassign' %}?employee_id=${empId}`)
+        const data  = await res.json()
+
+        if (data.error) { alert(data.error); return }
+
+        document.getElementById('unassign-emp-name').textContent   = data.employee_name
+        document.getElementById('unassign-sched-name').textContent = data.schedule_name
+        document.getElementById('unassign-emp-id').value           = data.employee_id
+      })
+
+      document.getElementById('btn-confirm-unassign-sched')?.addEventListener('click', async function () {
+        const empId = document.getElementById('unassign-emp-id').value
+        const res   = await fetch("{% url 'schedule-unassign' %}", {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+          body:    JSON.stringify({ employee_id: empId }),
+        })
+        const data = await res.json()
+        if (data.status === 'unassigned') {
+          alert(data.message)
+          location.reload()
+        } else {
+          alert(data.error || 'Unassign failed.')
+        }
+      })
+
+      function getCookie(name) {
+        let v = null
+        document.cookie.split(';').forEach(c => {
+          const t = c.trim()
+          if (t.startsWith(name + '=')) v = decodeURIComponent(t.slice(name.length + 1))
+        })
+        return v
+      }
+
+      // ── Covered Dates Calendar Modal ─────────────────────────────────────────────
+      let _calDates   = []
+      let _calYear    = new Date().getFullYear()
+      let _calMonth   = new Date().getMonth()
+
+      document.getElementById('schedDatesCalendarModal')?.addEventListener('show.bs.modal', function (e) {
+        const btn = e.relatedTarget
+        if (!btn) return
+        _calDates = JSON.parse(btn.dataset.dates || '[]')
+        document.getElementById('cal-sched-name').textContent = btn.dataset.name
+
+        // Navigate to the month of the first date if available
+        if (_calDates.length) {
+          const first = new Date(_calDates[0] + 'T00:00:00')
+          _calYear  = first.getFullYear()
+          _calMonth = first.getMonth()
+        } else {
+          _calYear  = new Date().getFullYear()
+          _calMonth = new Date().getMonth()
+        }
+        renderCalendar()
+      })
+
+      document.getElementById('cal-prev-month')?.addEventListener('click', function () {
+        _calMonth--
+        if (_calMonth < 0) { _calMonth = 11; _calYear-- }
+        renderCalendar()
+      })
+
+      document.getElementById('cal-next-month')?.addEventListener('click', function () {
+        _calMonth++
+        if (_calMonth > 11) { _calMonth = 0; _calYear++ }
+        renderCalendar()
+      })
+
+      function renderCalendar() {
+        const DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+        const MONTHS = ['January','February','March','April','May','June',
+                        'July','August','September','October','November','December']
+        document.getElementById('cal-month-label').textContent = `${MONTHS[_calMonth]} ${_calYear}`
+
+        const firstDay  = new Date(_calYear, _calMonth, 1).getDay()
+        const daysInMon = new Date(_calYear, _calMonth + 1, 0).getDate()
+        const dateSet   = new Set(_calDates)
+
+        let html = '<table class="table table-bordered text-center mb-0" style="table-layout:fixed;">'
+        html += '<thead><tr>' + DAYS.map(d => `<th>${d}</th>`).join('') + '</tr></thead>'
+        html += '<tbody><tr>'
+
+        // Leading blank cells
+        for (let i = 0; i < firstDay; i++) html += '<td></td>'
+
+        let col = firstDay
+        for (let day = 1; day <= daysInMon; day++) {
+          const iso = `${_calYear}-${String(_calMonth + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
+          const hit = dateSet.has(iso)
+          html += `<td>
+            <span class="${hit ? 'badge bg-blue text-white' : ''}" style="${hit ? '' : 'color:inherit'}">${day}</span>
+          </td>`
+          col++
+          if (col % 7 === 0 && day < daysInMon) html += '</tr><tr>'
+        }
+
+        // Trailing blank cells
+        const remaining = (7 - (col % 7)) % 7
+        for (let i = 0; i < remaining; i++) html += '<td></td>'
+        html += '</tr></tbody></table>'
+
+        document.getElementById('sched-calendar-grid').innerHTML = html
+      }
+
+    </script>
+    <script>
+      initTableController({
+        searchId:    'schedule-search-input',
+        pageCountId: 'schedule-main-page-count',
+        paginId:     'schedule-pagination',
+        rowSelector: '.schedules-row',
+        defaultSize: 8,
+        setFnName:   'setPageSize',
+      });
+    </script>
+    <script src="{% static 'js/tours/schedules/schedules.js' %}"></script>
+{% endblock %}

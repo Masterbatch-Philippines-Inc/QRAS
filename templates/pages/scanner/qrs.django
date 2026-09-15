@@ -1,0 +1,567 @@
+{% extends 'base.django' %}
+{% load static %}
+{% block content %}
+    <script src="{% static 'js/libraries/html_qr.js' %}"></script>
+    <div class="page-wrapper">
+      <div class="container-xl mt-5">
+        <h2>QR Scanner</h2>
+        <ol class="breadcrumb text-secondary" aria-label="breadcrumbs" style="margin: 0 0 1rem 0;">
+          <li class="breadcrumb-item active" aria-current="page">&nbsp;</li>
+        </ol>
+
+        <div class="row row-cards align-items-stretch">
+
+          <!-- LEFT: QR Reader -->
+          <div class="col-lg-7 d-flex flex-column">
+            <div class="card flex-fill">
+              <div class="card-header">
+                <h3 class="card-title">
+                  <i class="ti ti-scan me-2"></i>Scan Employee QR Code
+                </h3>
+                <div class="card-options">
+                  <span class="badge bg-green-lt" id="scannerStatusBadge">
+                    <span class="status-dot status-dot-animated bg-green me-1"></span>
+                    Ready
+                  </span>
+                </div>
+              </div>
+              <div class="card-body">
+                <div id="reader" style="width:100%; height:auto;"></div>
+              </div>
+              <div class="card-footer text-secondary small text-center">
+                Point the camera at the employee's QR code. Hold steady until it scans.
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT: Scan Result -->
+          <div class="col-lg-5 d-flex flex-column">
+
+        <!-- Shot Clock -->
+        {% include 'components/ui/scanner-clock.html' %}
+
+        <!-- Placeholder -->
+        <div class="card" id="scanPlaceholder">
+          <div class="card-body d-flex flex-column justify-content-center align-items-center text-center py-5">
+            <div class="mb-3">
+              <i class="ti ti-qrcode text-secondary" style="font-size: 3.5rem;"></i>
+            </div>
+            <h3 class="mb-1 text-secondary">Waiting for scan…</h3>
+            <p class="text-secondary mb-4">Employee details will appear here after a successful scan.</p>
+            <div class="w-75 placeholder-glow">
+              <div class="placeholder placeholder-xs col-8 mb-2"></div>
+              <div class="placeholder placeholder-xs col-5 mb-2"></div>
+              <div class="placeholder placeholder-xs col-6 mb-2"></div>
+              <div class="placeholder placeholder-xs col-4"></div>
+            </div>
+            <div class="mt-4 w-75 placeholder-glow">
+              <a href="#" tabindex="-1" class="btn btn-primary disabled placeholder col-12 mb-2" aria-hidden="true"></a>
+              <a href="#" tabindex="-1" class="btn btn-secondary disabled placeholder col-12" aria-hidden="true"></a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Result card -->
+        <div class="card d-none" id="scanResult">
+          <div class="card-header">
+            <h3 class="card-title">
+              <i class="ti ti-user-check me-2 text-green"></i>Scan Result
+            </h3>
+            <div class="card-options">
+              <span class="badge bg-green-lt">
+                <span class="status-dot bg-green me-1"></span>Detected
+              </span>
+            </div>
+          </div>
+          <div class="card-body d-flex flex-column justify-content-center">
+            <div class="d-flex align-items-center gap-3 mb-4">
+              <span class="avatar avatar-xl" id="scanAvatar">--</span>
+              <div>
+                <div class="fw-medium fs-4" id="scanEmpName">—</div>
+                <div class="text-secondary" id="scanEmpId">—</div>
+              </div>
+            </div>
+            <div class="d-flex flex-column gap-2">
+              <div class="row align-items-center">
+                <div class="col-4 text-secondary">Date</div>
+                <div class="col-8 fw-medium" id="scanDate">—</div>
+              </div>
+              <div class="row align-items-center">
+                <div class="col-4 text-secondary">Time</div>
+                <div class="col-8 fw-medium" id="scanTime">—</div>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer">
+            <form method="POST" id="confirmTimeInForm" action="{% url 'scan-attendance' %}">
+              {% csrf_token %}
+              <input type="hidden" name="employee_id" id="confirmEmpId">
+              <input type="hidden" name="captured_image" id="capturedImage">
+              <div class="d-grid gap-2">
+                <button type="submit" name="log_action" value="time_in" class="btn btn-primary btn-lg">
+                  Record as TIME IN
+                </button>
+                <button type="submit" name="log_action" value="time_out" class="btn btn-secondary btn-lg">
+                  Record as TIME OUT
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hidden modal triggers (required by scanner script — do not remove) -->
+    <button id="duplicationModalTrigger" data-bs-toggle="modal" data-bs-target="#duplicationModal" style="display:none;"></button>
+    <button id="actionConfirmModalTrigger" data-bs-toggle="modal" data-bs-target="#actionConfirmModal" style="display:none;"></button>
+
+    <!--  ═══════════════════════════════════════════
+          MODAL — Confirm Time In / Time Out Action
+      ═══════════════════════════════════════════  -->
+    <div class="modal modal-blur fade" id="actionConfirmModal" tabindex="-1" role="dialog" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+        <div class="modal-content">
+          <div class="modal-body text-center py-4">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-lg text-warning">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M12 9v4" />
+              <path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0" />
+              <path d="M12 16h.01" />
+            </svg>
+            <h3 class="mt-3">Confirm Action</h3>
+            <div>
+              Are you sure you want to record this as
+              <span class="fw-bold" id="actionConfirmLabel">Time In</span>?
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-ghost-secondary w-100" id="actionConfirmNoBtn" data-bs-dismiss="modal">No</button>
+            <button type="button" class="btn btn-primary w-100" id="actionConfirmYesBtn" data-bs-dismiss="modal">Yes</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ── Scanner Init ──────────────────────────────────────
+      const html5QrCode = new Html5Qrcode("reader");
+      const config = {
+        fps: 10,
+        qrbox: function(viewfinderWidth, viewfinderHeight) {
+          const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+          return { width: Math.floor(minEdge * 0.7), height: Math.floor(minEdge * 0.7) };
+        },
+        aspectRatio: 1.151,
+        videoConstraints: {
+          facingMode: "environment",
+          width: { ideal: 640 },
+          height: { ideal: 640 }
+        }
+      };
+
+      html5QrCode.start(
+        { deviceId: undefined },
+        config,
+        onScanSuccess
+      );
+      
+      // ── Prevent Multiple Scan ─────────────────────────────
+      let isProcessing = false;
+      
+      // ── CSRF ──────────────────────────────────────────────
+      function getCSRFToken() {
+        let name = 'csrftoken=';
+        let cookies = document.cookie.split(';');
+        for (let c of cookies) {
+          c = c.trim();
+          if (c.startsWith(name)) return c.substring(name.length);
+        }
+        return null;
+      }
+      
+      // ── Extract QR Details ────────────────────────────────
+      function onScanSuccess(decodedText) {
+
+        if (isProcessing) return;
+        isProcessing = true;
+
+        captureSnapshot();
+        html5QrCode.pause();
+
+        // time + date
+        let now = new Date(Date.now() - (window.CLOCK_OFFSET_MINUTES || 0) * 60 * 1000);
+        let hours = now.getHours();
+        let minutes = now.getMinutes().toString().padStart(2, '0');
+        let seconds = now.getSeconds().toString().padStart(2, '0');
+        let ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12 || 12;
+
+        let finalTime = hours + ":" + minutes + ":" + seconds + " " + ampm;
+        let finalDate = now.toLocaleDateString('en-US', {
+          month: 'short',
+          day: '2-digit',
+          year: 'numeric'
+        });
+
+        // employee id
+        let empId = getEmployeeId(decodedText);
+        if (!empId) {
+          showToastModal('Invalid QR Code', 'warning');
+          resumeScanner();
+          return;
+        }
+
+        // name
+        let name = decodedText.split("ID NO:")[0].trim();
+
+        // initials
+        const parts = name.split(/\s+/);
+        const initials = parts.length >= 2
+          ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+          : name.slice(0, 2).toUpperCase();
+
+        // populate card
+        document.getElementById('scanAvatar').textContent  = initials;
+        document.getElementById('scanEmpName').textContent = name;
+        document.getElementById('scanEmpId').textContent   = 'Employee No. ' + empId;
+        document.getElementById('scanDate').textContent    = finalDate;
+        document.getElementById('scanTime').textContent    = finalTime;
+
+        document.getElementById('latestTime').innerText = finalTime;
+        document.getElementById('latestDate').innerText = finalDate;
+
+        document.getElementById('confirmEmpId').value = empId;
+
+        document.getElementById('scanPlaceholder').classList.add('d-none');
+        document.getElementById('scanResult').classList.remove('d-none');
+
+        const badge = document.getElementById('scannerStatusBadge'); 
+        badge.className = 'badge bg-primary-lt'; 
+        badge.innerHTML = '<span class="status-dot bg-primary me-1"></span> Scanned';
+      }
+      function captureSnapshot() {
+        const video = document.querySelector('#reader video');
+        if (!video || !video.videoWidth) return;
+
+        const canvas = document.createElement('canvas');
+        canvas.width  = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+
+        canvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;'; //
+        canvas.id = 'scanOverlay';
+
+        const reader = document.getElementById('reader');
+        reader.style.position = 'relative';
+        reader.appendChild(canvas); // ← append to #reader not video.parentElement
+        
+        document.getElementById('capturedImage').value = canvas.toDataURL('image/jpeg');
+      }
+      function resumeScanner() {
+        isProcessing = false;
+        const overlay = document.getElementById('scanOverlay');
+        if (overlay) overlay.remove();
+
+        // ── Reset result card back to placeholder ──────────────
+        document.getElementById('scanResult').classList.add('d-none');
+        document.getElementById('scanPlaceholder').classList.remove('d-none');
+
+        // ── Reset scanner badge ────────────────────────────────
+        const badge = document.getElementById('scannerStatusBadge');
+        badge.className = 'badge bg-green-lt';
+        badge.innerHTML = '<span class="status-dot status-dot-animated bg-green me-1"></span> Ready';
+
+        try {
+          html5QrCode.resume();
+        } catch {
+          html5QrCode.start(
+            { deviceId: undefined },
+            config,
+            onScanSuccess
+          );
+        }
+      }
+      
+      // ── Handle confirmation (FORM SUBMIT) ─────────────────
+      let pendingEmpId  = null;
+      let pendingAction = null;
+
+      function submitAttendance(empId, action) {
+        fetch("scan-attendance", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-CSRFToken": getCSRFToken()
+          },
+          body: new URLSearchParams({
+            employee_id: empId,
+            log_action: action,
+            captured_image: document.getElementById('capturedImage').value
+          })
+        })
+        .then(res => res.json())
+        .then(data => {
+
+          if (data.status === "time_recorded") {
+            showToastModal('Time ' + data.log_type + ' recorded.', 'success');
+            resumeScanner();
+          }
+          else if (data.status === "time_recorded_no_time_in") {
+            showToastModal('Time Out recorded. Flagged for Department Head approval under Missing Logs.', 'info');
+            resumeScanner();
+          }
+          else if (data.status === "duplicate") {
+            document.getElementById('duplicationModalTrigger').click();
+            let rec = data.last_record;
+            document.getElementById('earlyEmpName').innerText = rec.lr_empFN;
+            document.getElementById('earlierTime').innerText = rec.time;
+            document.getElementById('earlierStat').innerText = rec.log_type;
+            document.getElementById('earlierDate').innerText = rec.date;
+            document.getElementById('dupEmpId').value = empId;
+            document.getElementById('dupAction').value = action;
+          }
+          else if (data.status === "emp_not_found") {
+            showToastModal('Add employee first', 'warning');
+            resumeScanner();
+          }
+          else if (data.status === "no_time_in") {
+            showToastModal('No TIME IN found', 'warning');
+            resumeScanner();
+          }
+          else {
+            showToastModal('Something went wrong', 'danger');
+            resumeScanner();
+          }
+
+        })
+        .catch(() => {
+          showToastModal('Request failed', 'danger');
+          resumeScanner();
+        });
+      }
+
+      document.addEventListener('DOMContentLoaded', function () {
+
+        const confirmTimeOutModalEl = document.getElementById('confirmTimeOutModal');
+        const confirmTimeOutModal   = tabler.Modal.getOrCreateInstance(confirmTimeOutModalEl);
+
+        let actionConfirmEmpId = null;
+        let actionConfirmAction = null;
+        let pendingNoTimeInEmpId  = null;
+        let pendingNoTimeInAction = null;
+        const actionConfirmModalEl = document.getElementById('actionConfirmModal');
+        const actionConfirmModal   = tabler.Modal.getOrCreateInstance(actionConfirmModalEl);
+
+        function proceedAfterConfirm(empId, action) {
+          if (action === 'time_out') {
+            fetch(`{% url 'check-time-in-status' %}?employee_id=${encodeURIComponent(empId)}`)
+              .then(res => res.json())
+              .then(data => {
+                if (data.has_time_in === false) {
+                  // Defer showing confirmTimeOutModal until actionConfirmModal
+                  // has fully finished hiding, to avoid overlapping backdrops.
+                  pendingNoTimeInEmpId  = empId;
+                  pendingNoTimeInAction = action;
+                } else {
+                  submitAttendance(empId, action);
+                }
+              })
+              .catch(() => submitAttendance(empId, action));
+          } else {
+            submitAttendance(empId, action);
+          }
+        }
+
+        document.getElementById('confirmTimeInForm').addEventListener('submit', function(e) {
+          e.preventDefault();
+
+          actionConfirmEmpId  = document.getElementById('confirmEmpId').value;
+          actionConfirmAction = e.submitter.value;
+
+          document.getElementById('actionConfirmLabel').textContent =
+            actionConfirmAction === 'time_in' ? 'Time In' : 'Time Out';
+
+          actionConfirmModal.show();
+        });
+
+        document.getElementById('actionConfirmYesBtn').addEventListener('click', function() {
+          const empId  = actionConfirmEmpId;
+          const action = actionConfirmAction;
+          actionConfirmEmpId  = null;
+          actionConfirmAction = null;
+          proceedAfterConfirm(empId, action);
+        });
+
+        let actionWasCancelled = false;
+
+        document.getElementById('actionConfirmNoBtn').addEventListener('click', function() {
+          actionConfirmEmpId  = null;
+          actionConfirmAction = null;
+          actionWasCancelled  = true;
+        });
+
+        actionConfirmModalEl.addEventListener('hidden.bs.modal', function() {
+          if (actionWasCancelled) {
+            actionWasCancelled = false;
+            showToastModal('Attendance recording cancelled.', 'info');
+            resumeScanner();
+            return;
+          }
+
+          if (pendingNoTimeInEmpId) {
+            pendingEmpId  = pendingNoTimeInEmpId;
+            pendingAction = pendingNoTimeInAction;
+            pendingNoTimeInEmpId  = null;
+            pendingNoTimeInAction = null;
+            confirmTimeOutModal.show();
+          }
+        });
+
+        document.getElementById('confirmTimeOutBtn').addEventListener('click', function() {
+          const empId  = pendingEmpId;
+          const action = pendingAction;
+          pendingEmpId  = null;
+          pendingAction = null;
+          submitAttendance(empId, action);
+        });
+
+        document.getElementById('confirmTimeOutCancelBtn').addEventListener('click', function() {
+          pendingEmpId  = null;
+          pendingAction = null;
+          showToastModal('Time Out cancelled.', 'info');
+        });
+
+        confirmTimeOutModalEl.addEventListener('hidden.bs.modal', function() {
+          if (pendingEmpId) {
+            pendingEmpId  = null;
+            pendingAction = null;
+            resumeScanner();
+          }
+        });
+
+        // ── Keyboard shortcuts ───────────────────────────────
+        let _lastShortcutTime = 0;
+        const SHORTCUT_COOLDOWN_MS = 600;
+
+        function shortcutAllowed() {
+          const now = Date.now();
+          if (now - _lastShortcutTime < SHORTCUT_COOLDOWN_MS) {
+            showToast('Please wait a moment before pressing again.', 'warning');
+            return false;
+          }
+          _lastShortcutTime = now;
+          return true;
+        }
+
+        document.addEventListener('keydown', function(e) {
+          const isShortcutKey = ['Enter', ' ', 'Escape'].includes(e.key);
+          if (isShortcutKey && !shortcutAllowed()) {
+            e.preventDefault();
+            return;
+          }
+
+          const duplicationOpen    = document.getElementById('duplicationModal').classList.contains('show');
+          const confirmTimeOutOpen = confirmTimeOutModalEl.classList.contains('show');
+          const actionConfirmOpen  = actionConfirmModalEl.classList.contains('show');
+          const scanResultShown    = !document.getElementById('scanResult').classList.contains('d-none');
+
+          if (duplicationOpen) {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              document.getElementById('duplicationForm').requestSubmit();
+            } else if (e.key === 'Escape') {
+              e.preventDefault();
+              document.getElementById('retainEntryBtn').click();
+            }
+            return;
+          }
+
+          if (confirmTimeOutOpen) {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              document.getElementById('confirmTimeOutBtn').click();
+            } else if (e.key === 'Escape') {
+              e.preventDefault();
+              document.getElementById('confirmTimeOutCancelBtn').click();
+            }
+            return;
+          }
+
+          if (actionConfirmOpen) {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              document.getElementById('actionConfirmYesBtn').click();
+            } else if (e.key === 'Escape') {
+              e.preventDefault();
+              document.getElementById('actionConfirmNoBtn').click();
+            }
+            return;
+          }
+
+          if (scanResultShown) {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              document.querySelector('#confirmTimeInForm button[value="time_in"]').click();
+            } else if (e.key === ' ') {
+              e.preventDefault();
+              document.querySelector('#confirmTimeInForm button[value="time_out"]').click();
+            } else if (e.key === 'Escape') {
+              e.preventDefault();
+              showToastModal('Scan action was cancelled.', 'info');
+              resumeScanner();
+            }
+          }
+        });
+
+      });
+      
+      // ── Duplication Modal ─────────────────────────────────
+      document.getElementById('duplicationForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        let formData = new FormData(this);
+
+        fetch("overwrite-attendance", {
+          method: "POST",
+          headers: {
+            "X-CSRFToken": getCSRFToken()
+          },
+          body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === "overwritten") {
+            tabler.Modal.getOrCreateInstance(document.getElementById('duplicationModal')).hide();
+            showToastModal('Latest entry used', 'info');
+            resumeScanner();
+          } else {
+            showToastModal('Failed to overwrite', 'danger');
+            resumeScanner();
+          }
+        });
+      });
+      
+      document.getElementById('duplicationForm').addEventListener('reset', function(e) {
+        e.preventDefault();
+        showToastModal('Earlier entry retained.', 'info');
+        resumeScanner();
+      });
+      
+      // ── Extract Employee ID ───────────────────────────────
+      function getEmployeeId(decodedText) {
+        let cleanText = decodedText.trim();
+
+        let match = cleanText.match(/(\d{5})\s*$/);
+        if (match) return match[1];
+
+        let fallback = cleanText.slice(-5);
+        if (!/^\d{5}$/.test(fallback)) return null;
+
+        return fallback;
+      }
+    </script>
+
+{% endblock %}

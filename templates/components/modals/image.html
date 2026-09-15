@@ -1,0 +1,30 @@
+{% load static %}
+  <!-- ═══════════════════════════════════════════
+      MODAL — Scan Capture Image MODAL
+  ═══════════════════════════════════════════ -->
+  <div class="modal modal-blur fade" id="imageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header mt-1">
+          <div>
+            <h3 class="modal-title mb-0" id="image-modal-title">Scanned Photo</h3>
+            <small class="text-secondary" id="image-modal-meta"></small>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body text-center">
+          <img id="image-modal-img" src="" alt="Scan capture"
+              style="max-width:100%; max-height:70vh; border-radius:6px;" />
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="image-modal-back">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M15 6l-6 6l6 6" />
+            </svg>
+            Back to Captures
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>

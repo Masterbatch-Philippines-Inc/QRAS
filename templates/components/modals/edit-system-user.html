@@ -1,0 +1,77 @@
+{% load static %}
+  <!-- ══════════════════════════════════════════════════════════════
+      MODAL — Edit System User
+  ═══════════════════════════════════════════════════════════════ -->
+  <div class="modal modal-blur fade" id="editUserModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+
+        <div class="modal-header">
+          <div class="d-flex align-items-center gap-2">
+            <i class="ti ti-info-circle text-primary fs-4"></i>
+            <h5 class="modal-title mb-0" id="editModalTitle">Editing account</h5>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+
+          <div id="editUserError" class="alert alert-danger d-none mb-3" role="alert"></div>
+          <input type="hidden" id="editUpdateUrl">
+
+          <div class="mb-3">
+            <label class="form-label">New Role</label>
+            <select class="form-select" id="editRole" onchange="toggleEditDeptField()">
+              <option value="">— No role assigned —</option>
+              {% for role in role_choices %}
+                <option value="{{ role.id }}" data-name="{{ role.name }}">
+                  {{ role.name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3 d-none" id="editDeptWrapper">
+            <label class="form-label required">Department</label>
+            <select class="form-select" id="editDepartment">
+              <option value="">— Select department —</option>
+              {% for dept in department_choices %}
+                <option value="{{ dept.id }}">{{ dept.name }}</option>
+              {% endfor %}
+            </select>
+            <div class="form-hint">Required for Department Head role.</div>
+            <script>
+              function toggleEditDeptField() {
+                const select     = document.getElementById('editRole');
+                const selected   = select.options[select.selectedIndex];
+                const isDeptHead = selected.dataset.name === 'Department Head';
+                document.getElementById('editDeptWrapper').classList.toggle('d-none', !isDeptHead);
+                if (!isDeptHead) document.getElementById('editDepartment').value = '';
+              }
+            </script>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Linked Employee</label>
+            <select class="form-select" id="editEmployee">
+              <option value="">— None —</option>
+              {% for emp in employee_choices %}
+                <option value="{{ emp.id }}">{{ emp.last_name }}, {{ emp.first_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-0">
+            <label class="form-label required">New Webmail</label>
+            <input type="email" class="form-control" id="editEmail" placeholder="Enter email address" autocomplete="off">
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost-secondary me-auto" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" onclick="submitEditUser()">
+            <i class="ti ti-device-floppy me-1"></i>Save changes
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>

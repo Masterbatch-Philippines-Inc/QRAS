@@ -1,5 +1,5 @@
 from ...dataclasses import UndertimeResult
-from apps.qras.models.management import BREAK_HOURS
+from apps.qras.models.schedules import BREAK_HOURS
 from datetime import timedelta
 
 

@@ -1,0 +1,87 @@
+{% load static %}
+  <!-- ═══════════════════════════════════════════
+      GLOBAL MODAL — Confirmation
+  ═══════════════════════════════════════════ -->
+  <div class="modal modal-blur fade" id="globalConfirmModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div id="confirm-modal-status"></div>
+        <div class="modal-body text-center py-4">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="icon mb-2 text-danger icon-lg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+            stroke="currentColor"
+            fill="none"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+            <path d="M12 9v2m0 4v.01" />
+            <path d="M5 19h14a2 2 0 0 0 1.84 -2.75l-7.1 -12.25a2 2 0 0 0 -3.5 0l-7.1 12.25a2 2 0 0 0 1.75 2.75" />
+          </svg>
+          <h3 id="confirm-modal-title">Are you sure?</h3>
+          <div class="text-secondary" id="confirm-modal-message">
+            This action cannot be undone.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <div class="w-100">
+            <div class="row">
+              <div class="col">
+                <button id="confirm-modal-close" class="btn w-100" data-bs-dismiss="modal">Cancel</button>
+              </div>
+              <div class="col">
+                <button id="confirm-modal-confirm" class="btn btn-danger w-100">Confirm</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**
+    * USAGE::
+    * showConfirmModal(options)
+    *
+    * options = {
+    *   title:      string   — modal heading            (default: "Are you sure?")
+    *   message:    string   — body text                (default: "This action cannot be undone.")
+    *   confirmText: string  — confirm button label     (default: "Confirm")
+    *   danger:     bool     — red accent when true     (default: true)
+    *   onConfirm:  fn       — callback on confirm click
+    * }
+    */
+    function showConfirmModal({ title, message, confirmText, danger = true, onConfirm } = {}) {
+      const accent = danger ? 'danger' : 'primary';
+
+      document.getElementById('confirm-modal-title').textContent    = title       || 'Are you sure?';
+      document.getElementById('confirm-modal-message').textContent  = message     || 'This action cannot be undone.';
+      document.getElementById('confirm-modal-confirm').textContent  = confirmText || 'Confirm';
+
+      // swap accent color
+      const status  = document.getElementById('confirm-modal-status');
+      const confirmBtn = document.getElementById('confirm-modal-confirm');
+      const icon    = document.querySelector('#globalConfirmModal .icon');
+
+      confirmBtn.className = `btn btn-${accent} w-100`;
+      icon.className      = `icon mb-2 text-${accent} icon-lg`;
+
+      // replace old listener to avoid stacking
+      const fresh = confirmBtn.cloneNode(true);
+      confirmBtn.replaceWith(fresh);
+
+      fresh.addEventListener('click', function () {
+        document.getElementById('confirm-modal-close').click();
+        if (typeof onConfirm === 'function') onConfirm();
+      });
+
+      document.getElementById('confirm-modal-trigger').click();
+    }
+  </script>

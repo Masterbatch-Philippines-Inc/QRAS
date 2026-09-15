@@ -1,0 +1,296 @@
+{% extends 'base.django' %}
+{% load static %}
+{% block content %}
+    <div class="page-wrapper">
+      {% if dept_warning %}
+      <div class="container-xl mt-4">
+        <div class="alert alert-warning d-flex gap-2 align-items-center">
+          <i class="ti ti-alert-triangle flex-shrink-0"></i>
+          Your account is not assigned to a department. Contact your administrator to get access.
+        </div>
+      </div>
+      {% endif %}
+      <div class="container-xl mt-5">
+        <div class="d-flex align-items-start justify-content-between" style="margin: 0 0 1.15rem 0;">
+          <div>
+            <h2 class="mb-1">Missing Logs</h2>
+            <ol class="breadcrumb text-secondary mb-0" aria-label="breadcrumbs">
+              <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+              <li class="breadcrumb-item active" aria-current="page">Missing Logs</li>
+            </ol>
+          </div>
+          <button id="ml-approval-btn-help-tour" class="btn btn-sm btn-ghost-secondary" title="Missing Logs page tour">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            &nbsp;Need Help
+          </button>
+        </div>
+
+        <div class="card">
+          <div class="card-table">
+
+            <!-- ─── Header ─── -->
+            <div class="card-header">
+              <div class="row w-full">
+                <div class="col">
+                  <h3 class="card-title mb-0">Missing Logs — Pending Action</h3>
+                  <p class="text-secondary m-0">Employees with an incomplete time-in or time-out.</p>
+                </div>
+                <div class="col-md-auto col-sm-12">
+                  <div class="input-group input-group-flat w-auto">
+                    <span class="input-group-text">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/>
+                      </svg>
+                    </span>
+                    <input id="ml-search" type="text" class="form-control" autocomplete="off" placeholder="Search employee…" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ─── Table ─── -->
+            <div class="table-responsive">
+              <table class="table table-vcenter table-bordered" id="ml-table">
+                <thead>
+                  <tr>
+                    <th>Employee</th>
+                    <th>Date</th>
+                    <th>Time In</th>
+                    <th>Time Out</th>
+                    <th>Missing</th>
+                    <th>Filed By</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for entry in missing_logs %}
+                  <tr class="ml-row">
+
+                    <!-- Employee -->
+                    <td>
+                      <div class="fw-semibold">
+                        {{ entry.employee.last_name }}, {{ entry.employee.first_name }}
+                      </div>
+                      <div class="text-secondary" style="font-size:12px;">
+                        {{ entry.employee.position|default:"—" }}
+                      </div>
+                    </td>
+
+                    <!-- Date -->
+                    <td>{{ entry.date|date:"M d, Y" }}</td>
+
+                    <!-- Time In -->
+                    <td>
+                      {% if entry.time_in %}
+                        {{ entry.time_in|time:"h:i A" }}
+                      {% else %}
+                        <span class="text-danger fw-semibold">—</span>
+                      {% endif %}
+                    </td>
+
+                    <!-- Time Out -->
+                    <td>
+                      {% if entry.time_out %}
+                        {{ entry.time_out|time:"h:i A" }}
+                      {% else %}
+                        <span class="text-danger fw-semibold">—</span>
+                      {% endif %}
+                    </td>
+
+                    <!-- Missing log type -->
+                    <td>
+                      {% if entry.log_type == 'time_in' %}
+                        <span class="badge bg-pink-lt text-pink">Time In</span>
+                      {% else %}
+                        <span class="badge bg-orange-lt text-orange">Time Out</span>
+                      {% endif %}
+                    </td>
+
+                    <!-- Filed By -->
+                    <td>
+                      <div style="font-size:13px;">System</div>
+                      <div class="text-secondary" style="font-size:11px;">{{ entry.filed_at|date:"M d, Y h:i A" }}</div>
+                    </td>
+
+                    <!-- Actions -->
+                    <td>
+                      <div class="d-flex gap-2">
+                        {% comment %} <button class="btn btn-sm btn-ghost-secondary btn-ml-dismiss"
+                                data-ml-id="{{ entry.id }}">
+                          Dismiss
+                        </button> {% endcomment %}
+                        <button class="btn btn-sm btn-primary btn-ml-assign"
+                                data-bs-toggle="modal"
+                                data-bs-target="#MLassignModal"
+                                data-ml-id="{{ entry.id }}"
+                                data-ml-type="{{ entry.log_type }}"
+                                data-ml-employee="{{ entry.employee.last_name }}, {{ entry.employee.first_name }}"
+                                data-ml-date="{{ entry.date|date:'M d, Y' }}">
+                          Assign Time
+                        </button>
+                      </div>
+                    </td>
+
+                  </tr>
+                  {% empty %}
+                  <tr class="tc-django-empty">
+                    <td colspan="7" class="text-center text-secondary py-4">
+                      No pending missing logs.
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+            <div class="card-footer d-flex align-items-center">
+              <div class="dropdown clzst">
+                <a class="btn dropdown-toggle" data-bs-toggle="dropdown">
+                  <span id="ml-page-count" class="me-1">8</span> records
+                </a>
+                <div class="dropdown-menu">
+                  <a class="dropdown-item" onclick="setPageSize(8)">8 records</a>
+                  <a class="dropdown-item" onclick="setPageSize(20)">20 records</a>
+                  <a class="dropdown-item" onclick="setPageSize(50)">50 records</a>
+                </div>
+              </div>
+              <ul class="pagination m-0 ms-auto" id="ml-pagination"></ul>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ── Open assign modal ─────────────────────────────────────────────────────
+      document.getElementById('MLassignModal').addEventListener('show.bs.modal', function (e) {
+        const btn = e.relatedTarget
+        document.getElementById('assign-ml-id').value   = btn.dataset.mlId
+        document.getElementById('ml-modal-employee').textContent = btn.dataset.mlEmployee
+        document.getElementById('ml-modal-date').textContent     = btn.dataset.mlDate
+        document.getElementById('ml-modal-type').textContent     =
+          btn.dataset.mlType === 'time_in' ? 'Time In' : 'Time Out'
+        document.getElementById('ml-assign-time').value = ''
+      })
+
+      // ── Confirm assign & submit ───────────────────────────────────────────────
+      document.getElementById('btn-confirm-ml-assign').addEventListener('click', function () {
+        const mlId    = document.getElementById('assign-ml-id').value
+        const timeVal = document.getElementById('ml-assign-time').value
+
+        if (!timeVal) {
+          alert('Please enter a time before submitting.')
+          return
+        }
+
+        this.disabled  = true
+        this.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'
+
+        submitAction(mlId, 'resolve', timeVal)
+          .then(data => {
+            document.getElementById('ml-assign-modal-close').click()
+            if (data.status === 'resolved') {
+              removeRow(mlId)
+              alert('Missing log resolved and attendance recomputed.')
+            } else {
+              alert('Unexpected response.')
+            }
+          })
+          .catch(() => alert('Failed to resolve. Please try again.'))
+          .finally(() => {
+            this.disabled  = false
+            this.textContent = 'Submit'
+          })
+      })
+
+      // ── Dismiss ───────────────────────────────────────────────────────────────
+      document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.btn-ml-dismiss')
+        if (!btn) return
+
+        if (!confirm('Dismiss this missing log? It will be removed from the queue.')) return
+
+        const mlId    = btn.dataset.mlId
+        btn.disabled  = true
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'
+
+        submitAction(mlId, 'dismiss', null)
+          .then(data => {
+            if (data.status === 'dismissed') {
+              removeRow(mlId)
+            } else {
+              alert('Failed to dismiss.')
+              btn.disabled     = false
+              btn.textContent  = 'Dismiss'
+            }
+          })
+          .catch(() => {
+            alert('Failed to dismiss. Please try again.')
+            btn.disabled     = false
+            btn.textContent  = 'Dismiss'
+          })
+      })
+
+      // ── Shared fetch ──────────────────────────────────────────────────────────
+      function submitAction(mlId, action, time) {
+        const payload = { id: parseInt(mlId), action }
+        if (time) payload.time = time
+
+        return fetch("{% url 'missing-logs' %}", {
+          method:  'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken':  getCookie('csrftoken'),
+          },
+          body: JSON.stringify(payload),
+        }).then(r => {
+          if (!r.ok) throw new Error(`Server error ${r.status}`)
+          return r.json()
+        })
+      }
+
+      // ── Remove row + check empty ──────────────────────────────────────────────
+      function removeRow(mlId) {
+        const btn = document.querySelector(`.btn-ml-assign[data-ml-id="${mlId}"]`)
+        if (btn) btn.closest('tr').remove()
+        checkEmpty()
+      }
+
+      function checkEmpty() {
+        const tbody = document.querySelector('#ml-table tbody')
+        if (!tbody.querySelector('.ml-row')) {
+          tbody.innerHTML = `<tr><td colspan="7" class="text-center text-secondary py-4">No pending missing logs.</td></tr>`
+        }
+      }
+
+      // ── CSRF ──────────────────────────────────────────────────────────────────
+      function getCookie(name) {
+        let value = null
+        document.cookie.split(';').forEach(c => {
+          const t = c.trim()
+          if (t.startsWith(name + '=')) value = decodeURIComponent(t.slice(name.length + 1))
+        })
+        return value
+      }
+    </script>
+
+    <!-- hidden field for modal state -->
+    <input type="hidden" id="assign-ml-id" />
+
+    <script>
+      initTableController({
+        searchId:    'ml-search',
+        pageCountId: 'ml-page-count',
+        paginId:     'ml-pagination',
+        rowSelector: '.ml-row',
+        defaultSize: 8,
+        setFnName:   'setPageSize',
+      });
+    </script>
+    <script src="{% static 'js/tours/requests/ml-approval.js' %}"></script>
+{% endblock %}

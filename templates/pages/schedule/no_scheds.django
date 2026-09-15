@@ -1,0 +1,335 @@
+{% extends 'base.django' %}
+{% load static %}
+{% block content %}
+    <div class="page-wrapper">
+      {% if dept_warning %}
+      <div class="container-xl mt-4">
+        <div class="alert alert-warning d-flex gap-2 align-items-center">
+          Your account is not assigned to a department. Contact your administrator to get access.
+        </div>
+      </div>
+      {% endif %}
+      <div class="container-xl mt-5">
+        <div class="d-flex align-items-center justify-content-between" style="margin-bottom:.35rem;">
+          <h2 class="mb-0">Management</h2>
+          <button id="unscheduled-btn-help-tour" class="btn btn-sm btn-ghost-secondary" title="Employee Records page tour">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            &nbsp;Need Help
+          </button>
+        </div>
+        <ol class="breadcrumb text-secondary" style="margin: 0 0 1rem 0;">
+          <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+          <li class="breadcrumb-item active">Unscheduled Employees</li>
+        </ol>
+
+        <div class="card">
+          <div class="card-table">
+            <div class="card-header">
+              <div class="row w-full">
+                <div class="col">
+                  <h3 class="card-title mb-0">Employees Without Schedule</h3>
+                  <p class="text-secondary m-0" style="font-size:13px;">
+                    These employees have attendance logs but no assigned schedule. Assign a schedule to trigger recomputation.
+                  </p>
+                </div>
+                <div class="col-auto">
+                  <div class="input-group input-group-flat w-auto">
+                    <span class="input-group-text">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/>
+                      </svg>
+                    </span>
+                    <input id="ns-search" type="text" class="form-control" placeholder="Search employee…" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-vcenter table-bordered" id="ns-table">
+                <thead>
+                  <tr>
+                    <th>Employee</th>
+                    <th>Department</th>
+                    <th>Attendance Records</th>
+                    <th>Assign Schedule</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item in employees %}
+                  <tr class="ns-row">
+                    <td>
+                      <div class="fw-semibold">
+                        {{ item.employee.last_name }}, {{ item.employee.first_name }}
+                        <span class="badge bg-pink-lt ms-1" style="font-size:10px;">UN</span>
+                      </div>
+                      <div class="text-secondary" style="font-size:12px;">{{ item.employee.position|default:"—" }}</div>
+                    </td>
+                    <td>{{ item.employee.department }}</td>
+                    <td>
+                      <a href="{% url 'attendance-records' %}?filter={{ item.employee.last_name }}, {{ item.employee.first_name }}" >{{ item.attendance_count }} record{{ item.attendance_count|pluralize }}</a>
+                    </td>
+                    <td>
+                      <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <select class="form-select form-select-sm schedule-select" style="max-width:180px;">
+                          <option value="">— Select schedule —</option>
+                          {% for sched in schedules %}
+                          <option value="{{ sched.id }}">{{ sched.name }}</option>
+                          {% endfor %}
+                        </select>
+                        <div class="d-flex flex-column gap-1 ns-scope-wrap">
+                          <span class="text-secondary" style="font-size:12px;">Recompute scope:</span>
+                          <div class="d-flex flex-wrap gap-1">
+                            <button class="btn btn-xs btn-ghost-secondary btn-sm btn-scope" data-scope="all"
+                                    data-bs-toggle="tooltip" data-bs-placement="top"
+                                    data-bs-original-title="Recompute all existing attendance records.">
+                              All
+                            </button>
+                            <button class="btn btn-xs btn-ghost-secondary btn-sm btn-scope" data-scope="single_date"
+                                    data-bs-toggle="tooltip" data-bs-placement="top"
+                                    data-bs-original-title="Recompute one specific date only.">
+                              Single Date
+                            </button>
+                            <button class="btn btn-xs btn-ghost-secondary btn-sm btn-scope" data-scope="date_range"
+                                    data-bs-toggle="tooltip" data-bs-placement="top"
+                                    data-bs-original-title="Recompute records within a date range.">
+                              Date Range
+                            </button>
+                          </div>
+                          <div class="ns-date-inputs d-none mt-1 d-flex flex-wrap gap-1 align-items-center">
+                            <input type="hidden" class="ns-date-from" value="" />
+                            <input type="hidden" class="ns-date-to" value="" />
+                            <input type="text" class="form-control form-control-sm ns-drp"
+                                  style="max-width:220px;" placeholder="Select date…" autocomplete="off" readonly />
+                          </div>
+                        </div>
+                        <button class="btn btn-sm btn-primary btn-assign-ns"
+                                data-employee-id="{{ item.employee.employee_id }}">
+                          Assign
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {% empty %}
+                  <tr class="tc-django-empty">
+                    <td colspan="4" class="text-center text-secondary py-4">
+                      All employees with attendance logs have schedules assigned.
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+            <div class="card-footer">
+              <div class="dropdown clzst">
+                <a class="btn dropdown-toggle" data-bs-toggle="dropdown">
+                  <span id="ns-page-count" class="me-1">8</span> records
+                </a>
+                <div class="dropdown-menu">
+                  <a class="dropdown-item" onclick="setPageSize(8)">8 records</a>
+                  <a class="dropdown-item" onclick="setPageSize(20)">20 records</a>
+                  <a class="dropdown-item" onclick="setPageSize(50)">50 records</a>
+                </div>
+              </div>
+              <ul class="pagination m-0 ms-auto" id="ns-pagination"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Track chosen scope per row
+      const scopeMap = {}
+
+      // Set today as max date for all date inputs on page load
+      // const _nsToday = new Date().toISOString().split('T')[0]
+      // document.querySelectorAll('.ns-date-from, .ns-date-to').forEach(inp => {
+      //   inp.max = _nsToday
+      // })
+
+      document.addEventListener('click', async function (e) {
+
+        // ── Scope choice buttons ───────────────────────────────────────────
+        const scopeBtn = e.target.closest('.btn-scope')
+        if (scopeBtn) {
+          const row    = scopeBtn.closest('tr')
+          const empId  = row.querySelector('.btn-assign-ns').dataset.employeeId
+          const scope  = scopeBtn.dataset.scope
+
+          row.querySelectorAll('.btn-scope').forEach(b => {
+            b.classList.remove('btn-primary')
+            b.classList.add('btn-ghost-secondary')
+          })
+          scopeBtn.classList.remove('btn-ghost-secondary')
+          scopeBtn.classList.add('btn-primary')
+
+          scopeMap[empId] = scope
+
+          const wrap   = row.querySelector('.ns-date-inputs')
+          const drpInp = row.querySelector('.ns-drp')
+          const hidden = { from: row.querySelector('.ns-date-from'), to: row.querySelector('.ns-date-to') }
+
+          if (scope === 'all') {
+            wrap.classList.add('d-none')
+            hidden.from.value = ''
+            hidden.to.value   = ''
+            if ($(drpInp).data('daterangepicker')) $(drpInp).data('daterangepicker').remove()
+            drpInp.value = ''
+          } else {
+            wrap.classList.remove('d-none')
+            // Destroy previous instance if switching mode
+            if ($(drpInp).data('daterangepicker')) $(drpInp).data('daterangepicker').remove()
+
+            const isSingle = (scope === 'single_date')
+            $(drpInp).daterangepicker({
+              singleDatePicker: isSingle,
+              autoUpdateInput:  false,
+              maxDate:          moment(),
+              locale:           { cancelLabel: 'Clear' },
+            })
+            drpInp.placeholder = isSingle ? 'Pick a date' : 'From — To'
+            hidden.from.value  = ''
+            hidden.to.value    = ''
+            drpInp.value       = ''
+
+            $(drpInp).on('apply.daterangepicker', function (ev, picker) {
+              if (isSingle) {
+                $(this).val(picker.startDate.format('MMM D, YYYY'))
+                hidden.from.value = picker.startDate.format('YYYY-MM-DD')
+                hidden.to.value   = ''
+              } else {
+                $(this).val(picker.startDate.format('MMM D, YYYY') + ' — ' + picker.endDate.format('MMM D, YYYY'))
+                hidden.from.value = picker.startDate.format('YYYY-MM-DD')
+                hidden.to.value   = picker.endDate.format('YYYY-MM-DD')
+              }
+            })
+
+            $(drpInp).on('cancel.daterangepicker', function () {
+              $(this).val('')
+              hidden.from.value = ''
+              hidden.to.value   = ''
+            })
+          }
+
+          return
+        }
+
+        // ── Assign button ──────────────────────────────────────────────────
+        const btn = e.target.closest('.btn-assign-ns')
+        if (!btn) return
+
+        const row        = btn.closest('tr')
+        const empId      = btn.dataset.employeeId
+        const scheduleId = row.querySelector('.schedule-select').value
+
+        if (!scheduleId) {
+          alert('Please select a schedule first.')
+          return
+        }
+
+        const scope = scopeMap[empId]
+        if (!scope) {
+          alert('Please choose a recompute scope before assigning.')
+          return
+        }
+
+        const fromVal = row.querySelector('.ns-date-from').value
+        const toVal   = row.querySelector('.ns-date-to').value
+
+        if (scope === 'single_date' && !fromVal) {
+          alert('Please pick a date.')
+          return
+        }
+        if (scope === 'date_range' && (!fromVal || !toVal)) {
+          alert('Please select a date range.')
+          return
+        }
+
+        const scheduleLabel = row.querySelector('.schedule-select option:checked').textContent.trim()
+        const employeeName  = row.querySelector('.fw-semibold').childNodes[0].textContent.trim()
+        const scopeLabel = scope === 'all'
+          ? 'all existing attendance records will be recomputed'
+          : scope === 'single_date'
+            ? `only the record for <strong>${fromVal}</strong> will be recomputed`
+            : `records from <strong>${fromVal}</strong> to <strong>${toVal}</strong> will be recomputed`
+
+        showConfirmModal({
+          title:       'Assign Schedule',
+          message:     `Assign "${scheduleLabel}" to ${employeeName}? ${scopeLabel}.`,
+          confirmText: 'Yes, Assign',
+          danger:      false,
+          onConfirm:   async () => {
+
+            btn.disabled  = true
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'
+
+            const payload = { employee_id: empId, schedule_id: scheduleId, recompute_scope: scope }
+            if (scope === 'single_date') payload.recompute_date = fromVal
+            if (scope === 'date_range')  { payload.recompute_from = fromVal; payload.recompute_to = toVal }
+
+            try {
+              const res  = await fetch("{% url 'schedule-assign-recompute' %}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+                body: JSON.stringify(payload),
+              })
+              const data = await res.json()
+
+              if (data.status === 'assigned') {
+                row.remove()
+
+                const banner = document.createElement('div')
+
+                if (data.info) {
+                  banner.className = 'alert alert-info'
+                  banner.innerHTML = data.info
+                } else if (data.outside_logs > 0) {
+                  banner.className = 'alert alert-warning'
+                  banner.innerHTML = `Schedule assigned. <strong>${data.outside_logs} date(s)</strong> have logs outside the new shift window — employee may file OT after completing the new shift.`
+                } else {
+                  banner.className = 'alert alert-success'
+                  banner.innerHTML = `Schedule assigned and ${data.recomputed} record(s) recomputed successfully.`
+                }
+
+                document.querySelector('.card-header').after(banner)
+              } else {
+                alert(data.error ?? 'Assignment failed.')
+                btn.disabled    = false
+                btn.textContent = 'Assign'
+              }
+            } catch (e) {
+              alert('Request failed.')
+              btn.disabled    = false
+              btn.textContent = 'Assign'
+            }
+          }
+        })
+      })
+
+      function getCookie(name) {
+        let v = null
+        document.cookie.split(';').forEach(c => {
+          const t = c.trim()
+          if (t.startsWith(name + '=')) v = decodeURIComponent(t.slice(name.length + 1))
+        })
+        return v
+      }
+    </script>
+    <script>
+      initTableController({
+        searchId:    'ns-search',
+        pageCountId: 'ns-page-count',
+        paginId:     'ns-pagination',
+        rowSelector: '.ns-row',
+        defaultSize: 8,
+        setFnName:   'setPageSize',
+      });
+    </script>
+    <script src="{% static 'js/tours/schedules/unscheduled.js' %}"></script>
+{% endblock %}

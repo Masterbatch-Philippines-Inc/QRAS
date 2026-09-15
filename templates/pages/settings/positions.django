@@ -1,0 +1,274 @@
+{% extends 'base.django' %}
+{% load static %}
+{% block content %}
+    <div class="page-wrapper">
+      <div class="container-xl mt-5">
+        <div class="d-flex align-items-center justify-content-between" style="margin-bottom:.35rem;">
+          <h2 class="mb-0">Settings</h2>
+          <button id="tours-pos-help-btn" class="btn btn-sm btn-ghost-secondary" title="Employee Records page tour">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            &nbsp;Need Help
+          </button>
+        </div>
+        <ol class="breadcrumb text-secondary" aria-label="breadcrumbs" style="margin: 0 0 1rem 0;">
+          <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+          <li class="breadcrumb-item active" aria-current="page">
+            Dept. Positions
+          </li>
+        </ol>
+        <!-- Filters -->
+        <div class="card">
+          <div class="card-table">
+            <div class="card-header">
+              <div class="row w-full align-items-center">
+                <!-- Left side -->
+                <div class="col">
+                  <h3 class="card-title mb-0">Dept. Position Records</h3>
+                  <p class="text-secondary m-0">Description for department position records.</p>
+                </div>
+                <!-- Right side -->
+                <div class="col-md-auto col-sm-12">
+                  <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <!-- SEARCH -->
+                    <div class="input-group input-group-flat w-auto">
+                      <span class="input-group-text">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                          fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/>
+                        </svg>
+                      </span>
+                      <input id="dept-pos-search" type="text" class="form-control" autocomplete="off" placeholder="Search…" />
+                    </div>
+                    <!-- FORM -->
+                    <form method="GET"  class="d-flex gap-2 align-items-center mb-0">
+                      <div class="col-auto">
+                        <select name="department" class="form-select" onchange="this.form.submit()">
+                          <option value="">All Departments</option>
+                          {% for dept in departments %}
+                          <option value="{{ dept.id }}" {% if dept_filter == dept.id|stringformat:"s" %}selected{% endif %}>
+                            {{ dept.name }}
+                          </option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                      <div class="col-auto">
+                        <label class="form-check form-switch mb-0"
+                              data-bs-toggle="tooltip"
+                              data-bs-placement="top"
+                              title="Toggle to include inactive dept. positions">
+                          <input class="form-check-input" type="checkbox" name="show_inactive" value="true" {% if show_inactive %}checked{% endif %} onchange="this.form.submit()">
+                        </label>
+                      </div>
+                    </form>
+
+                    <!-- BUTTON (outside form, same row) -->
+                    <button class="btn btn-primary"
+                            data-bs-toggle="modal"
+                            data-bs-target="#modalCreatePos">
+                      Add New Position
+                    </button>
+
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-vcenter table-hover card-table" id="tours-pos-rec">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Department</th>
+                  <th>Employees</th>
+                  {% if show_inactive %}<th>Status</th>{% endif %}
+                  <th class="w-1">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for pos in positions %}
+                <tr class="dept-pos-row">
+                  <td class="fw-medium">{{ pos.title }}</td>
+                  <td>{{ pos.department|default:"—" }}</td>
+                  <td>
+                    {% if pos.employee_count > 0 %}
+                    <a href="#" class="text-primary"
+                       data-bs-toggle="modal"
+                       data-bs-target="#employeesListModal"
+                       onclick="loadEmployeesList(
+                         '{% url 'position-employees' pos.id %}',
+                         '{{ pos.title }} — Employees',
+                         null
+                       )">
+                      {{ pos.employee_count }}
+                    </a>
+                    {% else %}
+                    <span class="text-secondary">0</span>
+                    {% endif %}
+                  </td>
+                  {% if show_inactive %}
+                  <td>
+                    {% if pos.is_active %}
+                      <span class="badge bg-green-lt">Active</span>
+                    {% else %}
+                      <span class="badge bg-red-lt">Inactive</span>
+                    {% endif %}
+                  </td>
+                  {% endif %}
+                  <td>
+                    <div class="d-flex gap-2">
+                      <button class="btn btn-sm btn-ghost-danger btn-toggle-pos"
+                              data-id="{{ pos.id }}" 
+                              data-title="{{ pos.title }}"
+                              data-active="{% if pos.is_active %}1{% else %}0{% endif %}">
+                          {% if pos.is_active %}Deactivate{% else %}Restore{% endif %}
+                      </button>
+                      <button class="btn btn-sm btn-primary btn-edit-pos" 
+                              data-id="{{ pos.id }}"
+                              data-title="{{ pos.title }}"
+                              data-department-id="{{ pos.department_id|default:'' }}"
+                              data-bs-toggle="modal"
+                              data-bs-target="#modalEditPos">
+                          Edit
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr class="tc-django-empty">
+                  <td colspan="5" class="text-center text-secondary py-5">
+                    <i class="ti ti-briefcase-off fs-1 d-block mb-2"></i>
+                    No positions found.
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="card-footer d-flex align-items-center">
+            <div class="dropdown clzst">
+              <a class="btn dropdown-toggle" data-bs-toggle="dropdown">
+                <span id="dept-pos-page-count" class="me-1">8</span> records
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" onclick="setPageSize(8)">8 records</a>
+                <a class="dropdown-item" onclick="setPageSize(20)">20 records</a>
+                <a class="dropdown-item" onclick="setPageSize(50)">50 records</a>
+              </div>
+            </div>
+            <ul class="pagination m-0 ms-auto" id="dept-pos-pagination"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const csrfToken = '{{ csrf_token }}';
+    
+      function showErrors(id, errors) {
+        const el = document.getElementById(id);
+        el.innerHTML = Object.values(errors).map(e => `<div>${e}</div>`).join('');
+        el.classList.remove('d-none');
+      }
+    
+      function hideErrors(id) {
+        const el = document.getElementById(id);
+        el.innerHTML = '';
+        el.classList.add('d-none');
+      }
+    
+      // CREATE
+      document.getElementById('btnCreatePos').addEventListener('click', async () => {
+        hideErrors('createErrors');
+        const body = new FormData();
+        body.append('title', document.getElementById('createTitle').value);
+        body.append('department_id', document.getElementById('createDeptId').value);
+    
+        const res = await fetch('{% url "position-create" %}', {
+          method: 'POST', headers: {'X-CSRFToken': csrfToken}, body
+        });
+        const data = await res.json();
+        if (data.success){
+          showToast('Action done.','success');
+          setTimeout(() => {
+            location.reload();
+          }, 2500);
+        }
+        else { showErrors('createErrors', data.errors); }
+      });
+    
+      // EDIT — open
+      document.querySelectorAll('.btn-edit-pos').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.getElementById('editPosId').value = btn.dataset.id;
+          document.getElementById('editTitle').value = btn.dataset.title;
+          document.getElementById('editPostDeptId').value = btn.dataset.departmentId || '';
+          hideErrors('editErrors');
+        });
+      });
+    
+      // EDIT — save
+      document.getElementById('btnEditPos').addEventListener('click', async () => {
+        hideErrors('editErrors');
+        const id = document.getElementById('editPosId').value;
+        const body = new FormData();
+        const deptVal = document.getElementById('editPostDeptId').value;
+        body.append('title', document.getElementById('editTitle').value);
+        body.append('department_id', document.getElementById('editPostDeptId').value);
+    
+        const url = `{% url "position-update" 0 %}`.replace('0', id);
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': csrfToken },
+          body
+        });
+    
+        const data = await res.json();
+        if (data.success){
+          showToast('Action done.','success');
+          setTimeout(() => {
+            location.reload();
+          }, 2500);
+        }
+        else {showErrors('editErrors', data.errors);}
+        console.log('sending department_id:', deptVal);
+      });
+
+    
+      // SOFT DELETE / RESTORE
+      document.querySelectorAll('.btn-toggle-pos').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const label = btn.dataset.active === '1' ? 'deactivate' : 'restore';
+          if (!confirm(`Are you sure you want to ${label} "${btn.dataset.title}"?`)) return;
+    
+          const url = `{% url "position-delete" 0 %}`.replace('0', btn.dataset.id);
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken }
+          });
+    
+          const data = await res.json();
+          if (data.success){
+            showToast('Action done.','success');
+            setTimeout(() => {
+              location.reload();
+            }, 2500);
+          }
+          else showToast(data.message, 'info');
+        });
+      });
+    </script>
+    <script>
+      initTableController({
+        searchId:    'dept-pos-search',
+        pageCountId: 'dept-pos-page-count',
+        paginId:     'dept-pos-pagination',
+        rowSelector: '.dept-pos-row',
+        defaultSize: 8,
+        setFnName:   'setPageSize',
+      });
+    </script>
+    <script src="{% static 'js/tours/settings/position.js' %}"></script>
+{% endblock %}

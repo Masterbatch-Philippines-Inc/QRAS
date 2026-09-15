@@ -13,6 +13,8 @@ class User(AbstractUser):
     email         = models.EmailField(unique=True)
     is_online     = models.BooleanField(default=False)
     must_change_password = models.BooleanField(default=False)
+    groups               = models.ManyToManyField('auth.Group', related_name='qras_user_set', blank=True)
+    user_permissions     = models.ManyToManyField('auth.Permission', related_name='qras_user_set', blank=True)
     
     def __str__(self):
         return f"{self.first_name} {self.last_name}".strip() or self.username

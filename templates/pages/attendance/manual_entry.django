@@ -1,0 +1,534 @@
+{% extends 'base.django' %}
+{% load static %}
+{% block content %}
+    <div class="page-wrapper">
+      <div class="container-xl mt-5">
+        <div class="d-flex align-items-center justify-content-between" style="margin-bottom:.35rem;">
+          <h2 class="mb-0">Settings</h2>
+          <button id="manual-att-help-btn" class="btn btn-sm btn-ghost-secondary" title="Employee Records page tour">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            &nbsp;Need Help
+          </button>
+        </div>
+        <ol class="breadcrumb text-secondary" aria-label="breadcrumbs" style="margin: 0 0 1rem 0;">
+          <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Manual Attendance</li>
+        </ol>
+
+        <!-- ─── Entry Card ─── -->
+        <div class="card mb-3">
+          <div class="card-header">
+            <div class="col">
+              <h3 class="card-title mb-0">Manual Attendance Entry</h3>
+              <p class="text-secondary m-0">Fill in each row and save all entries at once.</p>
+            </div>
+            <div class="col-auto ms-auto d-flex align-items-center gap-2">
+              <span class="badge bg-blue-lt text-blue fs-5 px-3 py-2" id="readyBadge">
+                0 entries ready
+              </span>
+              <button type="button" class="btn btn-ghost-secondary" id="clearEntriesBtn">
+                Clear All
+              </button>
+              <button type="button" class="btn btn-primary" id="saveEntriesBtn">
+                Save Entries
+              </button>
+            </div>
+          </div>
+
+          <!-- Column labels -->
+          <div class="px-3 pt-3 pb-1">
+            <div class="row gx-2 align-items-center" style="padding-left:2.25rem;">
+              <div class="col">
+                <small class="text-secondary fw-semibold text-uppercase" style="font-size:11px;letter-spacing:.05em;">Employee</small>
+              </div>
+              <div class="col-md-2">
+                <small class="text-secondary fw-semibold text-uppercase" style="font-size:11px;letter-spacing:.05em;">Date</small>
+              </div>
+              <div class="col-md-2">
+                <small class="text-secondary fw-semibold text-uppercase" style="font-size:11px;letter-spacing:.05em;">Time</small>
+              </div>
+              <div class="col-auto" style="width:160px;">
+                <small class="text-secondary fw-semibold text-uppercase" style="font-size:11px;letter-spacing:.05em;">Type</small>
+              </div>
+              <div class="col-auto" style="width:90px;"></div>
+            </div>
+          </div>
+
+          <div class="card-body pt-1 pb-2">
+            <div id="rowsContainer"></div>
+            <div id="validationMsg" class="alert alert-danger mt-3 d-none"></div>
+          </div>
+        </div>
+
+        <!-- ─── Preview Card ─── -->
+        <div class="card" id="previewCard" style="display:none!important;">
+          <div class="card-header">
+            <h3 class="card-title mb-0">
+              <i class="ti ti-table me-2 text-secondary"></i>Entry Preview
+            </h3>
+            <div class="card-options">
+              <span class="badge bg-green-lt text-green" id="previewCount">0 ready</span>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-vcenter table-bordered mb-0">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Employee</th>
+                  <th>ID</th>
+                  <th>Date</th>
+                  <th>Time</th>
+                  <th>Type</th>
+                </tr>
+              </thead>
+              <tbody id="previewBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Manual Attendance Duplicate Modal -->
+    <div class="modal modal-blur fade" id="manualDuplicationModal" tabindex="-1">
+      <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Duplicate Manual Entry Detected</h5>
+          </div>
+          <div class="modal-body">
+            <div class="text-center mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg text-warning mb-2" width="48" height="48" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path d="M12 9v2m0 4v.01" />
+                <circle cx="12" cy="12" r="9" />
+              </svg>
+              <h3 class="mb-1"><span id="manualEarlyEmpName"></span> already has a <span class="text-primary fw-bold" id="manualEarlierStat"></span> today.</h3>
+              <p class="text-secondary mb-0">Choose which entry should be kept on record.</p>
+            </div>
+            <div class="row row-cards">
+              <div class="col-6">
+                <div class="card card-sm">
+                  <div class="card-body">
+                    <div class="text-secondary mb-2">Earlier Entry</div>
+                    <div class="datagrid">
+                      <div class="datagrid-item">
+                        <div class="datagrid-title">Time</div>
+                        <div class="datagrid-content fw-bold" id="manualEarlierTime"></div>
+                      </div>
+                      <div class="datagrid-item">
+                        <div class="datagrid-title">Date</div>
+                        <div class="datagrid-content fw-bold" id="manualEarlierDate"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="card card-sm border-primary">
+                  <div class="card-body">
+                    <div class="text-primary mb-2">Latest Entry</div>
+                    <div class="datagrid">
+                      <div class="datagrid-item">
+                        <div class="datagrid-title">Time</div>
+                        <div class="datagrid-content fw-bold" id="manualLatestTime"></div>
+                      </div>
+                      <div class="datagrid-item">
+                        <div class="datagrid-title">Date</div>
+                        <div class="datagrid-content fw-bold" id="manualLatestDate"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" id="manualDupKeepBtn" class="btn btn-outline-secondary w-100">No, retain earlier entry</button>
+            <button type="button" id="manualDupOverwriteBtn" class="btn btn-primary w-100">Yes, use latest entry</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hidden modal triggers (required by scanner script — do not remove) -->
+    <button id="duplicationModalTrigger" data-bs-toggle="modal" data-bs-target="#manualDuplicationModal" style="display:none;">aaa</button>
+
+    <script>
+      const CSRF     = '{{ csrf_token }}'
+      const POST_URL = '{% url "manual-attendance" %}'
+      const TODAY    = new Date().toISOString().split('T')[0]
+      let rowCount   = 0
+
+      const EMPLOYEES = [
+        {% for emp in employees %}
+        { id: "{{ emp.employee_id }}", name: "{{ emp.last_name }}, {{ emp.first_name }}" },
+        {% endfor %}
+      ]
+
+      const empOptions = EMPLOYEES.map(e =>
+        `<option value="${e.id}">${e.name}</option>`
+      ).join('')
+
+      // ── Create one entry row ──────────────────────────────────────────
+      function createRow() {
+        rowCount++
+        const rowId  = `row-${rowCount}`
+        const selectId = `emp-select-${rowCount}`   // ← unique per row
+        //const rowNum = rowCount
+
+        const rowDiv = document.createElement('div')
+        rowDiv.className = 'row gx-2 align-items-center mb-2 entry-row'
+        rowDiv.id = rowId
+
+        rowDiv.innerHTML = `
+          <!-- Status dot -->
+          <div class="col-auto" style="width:2.25rem; text-align:center;">
+            <span class="row-status-dot" style="
+              display:inline-block;width:10px;height:10px;
+              border-radius:50%;background:#cbd5e0;
+              transition:background .2s;
+            "></span>
+          </div>
+
+          <!-- Employee -->
+          <div class="col">
+            <select id="${selectId}" class="form-select emp-select">
+              <option value="" disabled selected hidden>— Select employee —</option>
+              ${empOptions}
+            </select>
+          </div>
+
+          <!-- Date -->
+          <div class="col-md-2">
+            <input type="date" class="form-control date-input" value="${TODAY}" max="${TODAY}" />
+          </div>
+
+          <!-- Time -->
+          <div class="col-md-2">
+            <input type="time" class="form-control time-input" />
+          </div>
+
+          <!-- In / Out toggle -->
+          <div class="col-auto" style="width:160px;">
+            <div class="btn-group w-100" role="group">
+              <button type="button"
+                class="btn btn-sm btn-outline-success time-btn fw-semibold"
+                data-value="in">
+                <i class="ti ti-login me-1"></i>In
+              </button>
+              <button type="button"
+                class="btn btn-sm btn-outline-danger time-btn fw-semibold"
+                data-value="out">
+                <i class="ti ti-logout me-1"></i>Out
+              </button>
+            </div>
+          </div>
+
+          <!-- Add / Remove -->
+          <div class="col-auto" style="width:90px;">
+            <div class="d-flex gap-1">
+              <button type="button" class="btn btn-sm btn-ghost-secondary btn-duplicate-row"
+                title="Duplicate row" tabindex="-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                  <path d="M7 9.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667l0 -8.666" />
+                  <path d="M4.012 16.737a2 2 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1" />
+                  <path d="M11 14h6" /><path d="M14 11v6" />
+                </svg>
+              </button>
+              <button type="button" class="btn btn-sm add-del-btn btn-primary"
+                style="width:32px;" title="Add row">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                  <path d="M12 5l0 14" /><path d="M5 12l14 0" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        `
+
+        document.getElementById('rowsContainer').appendChild(rowDiv)    
+        new TomSelect(`#${selectId}`, { create: false, maxItems: 1 })
+
+        // In / Out active toggle
+        rowDiv.querySelectorAll('.time-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            rowDiv.querySelectorAll('.time-btn').forEach(b => {
+              b.classList.remove('active', 'btn-success', 'btn-danger')
+              b.classList.add(b.dataset.value === 'in' ? 'btn-outline-success' : 'btn-outline-danger')
+            })
+            btn.classList.remove(
+              btn.dataset.value === 'in' ? 'btn-outline-success' : 'btn-outline-danger'
+            )
+            btn.classList.add('active', btn.dataset.value === 'in' ? 'btn-success' : 'btn-danger')
+            updateRowStatus(rowDiv)
+            refreshPreview()
+          })
+        })
+
+        // Any field change
+        rowDiv.querySelectorAll('select, input').forEach(el => {
+          el.addEventListener('change', () => {
+            updateRowStatus(rowDiv)
+            refreshPreview()
+          })
+        })
+
+        // Duplicate row
+        rowDiv.querySelector('.btn-duplicate-row').addEventListener('click', () => {
+          const emp    = rowDiv.querySelector('.emp-select').value
+          const date   = rowDiv.querySelector('.date-input').value
+          const time   = rowDiv.querySelector('.time-input').value
+          const active = rowDiv.querySelector('.time-btn.active')?.dataset.value ?? null
+          createRow()
+          const newRow = document.querySelector('#rowsContainer .entry-row:last-child')
+          const ts = newRow.querySelector('.emp-select').tomselect
+          ts.setValue(emp)
+          updateRowStatus(newRow) 
+          newRow.querySelector('.date-input').value  = date
+          newRow.querySelector('.time-input').value  = time
+          if (active) {
+            newRow.querySelector(`.time-btn[data-value="${active}"]`).click()
+          }
+          updateRowStatus(newRow)
+          refreshPreview()
+        })
+
+        // Add / remove
+        rowDiv.querySelector('.add-del-btn').addEventListener('click', function () {
+          const rows = document.querySelectorAll('#rowsContainer .entry-row')
+          const isLast = [...rows].indexOf(rowDiv) === rows.length - 1
+          if (isLast) {
+            createRow()
+          } else {
+            rowDiv.remove()
+            refreshButtons()
+            refreshPreview()
+          }
+        })
+
+        refreshButtons()
+        updateRowStatus(rowDiv)
+        refreshPreview()
+
+        // Focus employee select on new row
+        rowDiv.querySelector('.emp-select').focus()
+      }
+
+      // ── Row completion dot ────────────────────────────────────────────
+      function updateRowStatus(rowDiv) {
+        const emp    = rowDiv.querySelector('.emp-select').value
+        const date   = rowDiv.querySelector('.date-input').value
+        const time   = rowDiv.querySelector('.time-input').value
+        const active = rowDiv.querySelector('.time-btn.active')
+        const dot    = rowDiv.querySelector('.row-status-dot')
+        const complete = emp && date && time && active
+        dot.style.background = complete ? '#2fb344' : '#cbd5e0'
+        dot.title = complete ? 'Ready' : 'Incomplete'
+      }
+
+      // ── +/− button labels ─────────────────────────────────────────────
+      const SVG_PLUS   = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg>`
+      const SVG_REMOVE = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M18 6l-12 12" /><path d="M6 6l12 12" /></svg>`
+
+      function refreshButtons() {
+        const rows = document.querySelectorAll('#rowsContainer .entry-row')
+        rows.forEach((row, i) => {
+          const btn    = row.querySelector('.add-del-btn')
+          const isLast = i === rows.length - 1
+          btn.innerHTML = isLast ? SVG_PLUS : SVG_REMOVE
+          btn.title     = isLast ? 'Add row' : 'Remove row'
+          btn.classList.toggle('btn-primary',     isLast)
+          btn.classList.toggle('btn-ghost-danger', !isLast)
+        })
+      }
+
+      // ── Collect entries ───────────────────────────────────────────────
+      function collectEntries() {
+        return [...document.querySelectorAll('#rowsContainer .entry-row')].map(row => {
+          const empSel    = row.querySelector('.emp-select')
+          const activeBtn = row.querySelector('.time-btn.active')
+          return {
+            employee_id:   empSel.value,
+            employee_name: empSel.options[empSel.selectedIndex]?.text ?? '—',
+            date:          row.querySelector('.date-input').value,
+            time:          row.querySelector('.time-input').value,
+            status:        activeBtn ? activeBtn.dataset.value : null,
+          }
+        })
+      }
+
+      // ── Preview table ─────────────────────────────────────────────────
+      function refreshPreview() {
+        const entries = collectEntries()
+        const filled  = entries.filter(e => e.employee_id && e.date && e.time && e.status)
+        const card    = document.getElementById('previewCard')
+        const tbody   = document.getElementById('previewBody')
+        const badge   = document.getElementById('readyBadge')
+        const prevCnt = document.getElementById('previewCount')
+
+        badge.textContent   = `${filled.length} entr${filled.length === 1 ? 'y' : 'ies'} ready`
+        prevCnt.textContent = `${filled.length} ready`
+
+        if (filled.length === 0) {
+          card.style.setProperty('display', 'none', 'important')
+          return
+        }
+
+        card.style.removeProperty('display')
+        tbody.innerHTML = filled.map((e, i) => `
+          <tr>
+            <td class="text-secondary">${i + 1}</td>
+            <td class="fw-medium">${e.employee_name}</td>
+            <td><code>${e.employee_id}</code></td>
+            <td>${e.date}</td>
+            <td>${e.time}</td>
+            <td>
+              <span class="badge ${e.status === 'in' ? 'bg-success-lt text-success' : 'bg-danger-lt text-danger'}">
+                ${e.status === 'in' ? 'Time In' : 'Time Out'}
+              </span>
+            </td>
+          </tr>
+        `).join('')
+      }
+
+      // ── Validate ──────────────────────────────────────────────────────
+      function validateEntries(entries) {
+        const errors = []
+        entries.forEach((e, i) => {
+          const n = i + 1
+          if (!e.employee_id) errors.push(`Row ${n}: No employee selected.`)
+          if (!e.date)        errors.push(`Row ${n}: Date is required.`)
+          if (!e.time)        errors.push(`Row ${n}: Time is required.`)
+          if (!e.status)      errors.push(`Row ${n}: Select Time In or Time Out.`)
+        })
+        return errors
+      }
+
+      // ── Save ──────────────────────────────────────────────────────────
+      const OVERWRITE_URL = '{% url "manual-overwrite-attendance" %}'
+      let   pendingDup    = null
+
+      function getDupModal() {
+        return tabler.Modal.getOrCreateInstance(document.getElementById('manualDuplicationModal'))
+      }   // holds { entry, remainingEntries, resolve }
+
+      async function saveEntries(entries) {
+        const btn = document.getElementById('saveEntriesBtn')
+        btn.disabled  = true
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving…'
+
+        for (const entry of entries) {
+          const payload = [{ employee_id: entry.employee_id, date: entry.date, time: entry.time, status: entry.status }]
+
+          try {
+            const r    = await fetch(POST_URL, {
+              method:  'POST',
+              headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+              body:    JSON.stringify(payload)
+            })
+            const data = await r.json()
+
+            if (data.status === 'duplicate') {
+              // pause and show modal
+              const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+              const logLabel = data.log_type  // "TIME IN" or "TIME OUT"
+
+              document.getElementById('manualEarlyEmpName').textContent = data.employee_name
+              document.getElementById('manualEarlierStat').textContent  = logLabel
+              document.getElementById('manualEarlierTime').textContent  = data.earlier_time
+              document.getElementById('manualEarlierDate').textContent  = data.earlier_date
+              const [h, m]   = entry.time.split(':').map(Number)
+              const ampm     = h >= 12 ? 'PM' : 'AM'
+              const h12      = (h % 12) || 12
+              const formatted = `${h12}:${String(m).padStart(2, '0')} ${ampm}`
+              document.getElementById('manualLatestTime').textContent   = formatted
+              document.getElementById('manualLatestDate').textContent   = data.earlier_date  // same date
+
+              // store context for the confirm/cancel handlers
+              pendingDup = {
+                employee_id: data.employee_id,
+                log_action:  entry.status,   // 'in' or 'out'
+                date:        entry.date,
+                time:        entry.time,
+              }
+
+              getDupModal().show()
+
+              // wait for user choice via Promise
+              const choice = await new Promise(resolve => {
+                pendingDup.resolve = resolve
+              })
+
+              getDupModal().hide()
+
+              if (choice === 'overwrite') {
+                try {
+                  await fetch(OVERWRITE_URL, {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+                    body:    JSON.stringify(pendingDup)
+                  })
+                } catch {
+                  alert('Network error during overwrite.')
+                }
+              }
+              // if choice === 'keep', do nothing and move to next entry
+
+              pendingDup = null
+
+            } else if (!data.message) {
+              alert(data.error ?? 'Save failed.')
+            }
+
+          } catch {
+            alert('Network error — check console.')
+          }
+        }
+
+        alert('Done processing entries.')
+        window.location.reload()
+      }
+
+      document.getElementById('saveEntriesBtn').addEventListener('click', () => {
+        const entries = collectEntries()
+        const errors  = validateEntries(entries)
+        const msgEl   = document.getElementById('validationMsg')
+
+        if (errors.length) {
+          msgEl.innerHTML = errors.join('<br>')
+          msgEl.classList.remove('d-none')
+          msgEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+          return
+        }
+        msgEl.classList.add('d-none')
+        saveEntries(entries)
+      })
+
+      // ── Clear ─────────────────────────────────────────────────────────
+      document.getElementById('clearEntriesBtn').addEventListener('click', () => {
+        if (!confirm('Clear all entries?')) return
+        document.getElementById('rowsContainer').innerHTML = ''
+        rowCount = 0
+        createRow()
+        document.getElementById('validationMsg').classList.add('d-none')
+      })
+
+      // ── Boot ──────────────────────────────────────────────────────────
+      createRow()
+
+      document.getElementById('manualDupOverwriteBtn').addEventListener('click', () => {
+        if (pendingDup?.resolve) pendingDup.resolve('overwrite')
+      })
+
+      document.getElementById('manualDupKeepBtn').addEventListener('click', () => {
+        if (pendingDup?.resolve) pendingDup.resolve('keep')
+      })
+    </script>
+    <script src="{% static 'js/tours/attendance/manual-attendance.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,434 @@
+{% extends 'base.django' %}
+{% load static %}
+{% block content %}
+    <div class="page-wrapper">
+      {% if dept_warning %}
+      <div class="container-xl mt-4">
+        <div class="alert alert-warning d-flex gap-2 align-items-center">
+          <i class="ti ti-alert-triangle flex-shrink-0"></i>
+          Your account is not assigned to a department. Contact your administrator.
+        </div>
+      </div>
+      {% endif %}
+      <div class="container-xl mt-5">
+        <div class="d-flex align-items-start justify-content-between" style="margin:0 0 1.15rem 0;">
+          <div>
+            <h2 class="mb-1">Approvals</h2>
+            <ol class="breadcrumb text-secondary mb-0" aria-label="breadcrumbs">
+              <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+              <li class="breadcrumb-item active" aria-current="page">Overtime</li>
+            </ol>
+          </div>
+          <button id="ot-btn-help-tour" class="btn btn-sm btn-ghost-secondary" title="Overtime Approvals page tour">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            &nbsp;Need Help
+          </button>
+        </div>
+
+        <div class="card">
+          <div class="card-table">
+            <div class="card-header">
+              <div class="row w-full">
+                <div class="col">
+                  <h3 class="card-title mb-0">Overtime Records</h3>
+                  <p class="text-secondary m-0">Employees with detected overtime. Flag to approve or reject.</p>
+                </div>
+                <div class="col-md-auto col-sm-12">
+                  <div class="input-group input-group-flat w-auto">
+                    <span class="input-group-text">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/>
+                      </svg>
+                    </span>
+                    <input id="ot-search" type="text" class="form-control" autocomplete="off" placeholder="Search employee…" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-vcenter table-bordered" id="ot-table">
+                <thead>
+                  <tr>
+                    <th>Employee</th>
+                    <th>Date</th>
+                    <th>Time In</th>
+                    <th>Time Out</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                    <th>Approved Overtime Hrs</th>
+                    <th>OT Type</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item in ot_records %}
+                  <tr class="ot-row"
+                      data-att-id="{{ item.att.id }}"
+                      data-raw-time-in="{{ item.raw_time_in }}"
+                      data-raw-time-out="{{ item.raw_time_out }}"
+                      data-shift-start="{{ item.shift_start }}"
+                      data-shift-end="{{ item.shift_end }}"
+                      data-has-pre-ot="{{ item.has_pre_ot|yesno:'true,false' }}"
+                      data-has-post-ot="{{ item.has_post_ot|yesno:'true,false' }}">
+
+                    <td>
+                      <div class="fw-semibold">{{ item.att.employee.last_name }}, {{ item.att.employee.first_name }}</div>
+                      <div class="text-secondary" style="font-size:12px;">{{ item.att.employee.position|default:"—" }}</div>
+                    </td>
+                    <td>{{ item.att.date|date:"M d, Y" }}</td>
+                    <td>{{ item.time_in }}</td>
+                    <td>{{ item.time_out }}</td>
+                    <td class="ot-status-cell">
+                      {% if item.status == 'APPROVED' %}
+                        <span class="badge bg-success-lt">Approved</span>
+                      {% elif item.status == 'REJECTED' %}
+                        <span class="badge bg-danger-lt">Rejected</span>
+                      {% else %}
+                        <span class="badge bg-warning-lt">Pending</span>
+                      {% endif %}
+                    </td>
+                    <td class="ot-action-cell">
+                      {% if item.status %}
+                        <span class="fw-bold text-blue">Decided</span>
+                      {% else %}
+                        <button class="btn btn-sm btn-primary btn-ot-manage"
+                                data-bs-toggle="modal"
+                                data-bs-target="#otManageModal">
+                          Manage
+                        </button>
+                      {% endif %}
+                    </td>
+                    <td class="text-secondary ot-approved-hrs-cell">
+                      {% if item.status == 'APPROVED' %}
+                        {{ item.ot.ot_hours }} hr{% if item.ot.ot_hours != 1 %}s{% endif %}
+                      {% else %}
+                        —
+                      {% endif %}
+                    </td>
+                    <td class="ot-type-cell">
+                      {% if item.status == 'APPROVED' %}
+                        {% if item.ot.ot_type == 'pre_shift' %}
+                          <span class="badge bg-blue-lt">Pre-Shift Overtime</span>
+                        {% else %}
+                          <span class="badge bg-purple-lt">Post-Shift Overtime</span>
+                        {% endif %}
+                      {% elif item.status == 'REJECTED' %}
+                        {% if item.ot.ot_type == 'pre_shift' %}
+                          <span class="badge bg-blue-lt">Pre-Shift</span>
+                        {% else %}
+                          <span class="badge bg-purple-lt">Post-Shift</span>
+                        {% endif %}
+                      {% else %}
+                        <span class="text-secondary">—</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% empty %}
+                  <tr class="tc-django-empty">
+                    <td colspan="8" class="text-center text-secondary py-4">No overtime records found.</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+            <div class="card-footer d-flex align-items-center">
+              <div class="dropdown clzst">
+                <a class="btn dropdown-toggle" data-bs-toggle="dropdown">
+                  <span id="ot-page-count" class="me-1">8</span> records
+                </a>
+                <div class="dropdown-menu">
+                  <a class="dropdown-item" onclick="setPageSize(8)">8 records</a>
+                  <a class="dropdown-item" onclick="setPageSize(20)">20 records</a>
+                  <a class="dropdown-item" onclick="setPageSize(50)">50 records</a>
+                </div>
+              </div>
+              <ul class="pagination m-0 ms-auto" id="ot-pagination"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- ── Manage Modal ─────────────────────────────────────────────────────── -->
+    <div class="modal modal-blur fade" id="otManageModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Manage Overtime</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+
+            <!-- Info row -->
+            <div class="mb-3 p-3 bg-blue-lt rounded" id="ot-modal-info">
+              <div class="row g-2 text-sm text-center">
+                <div class="col-6">
+                  <div class="text-secondary fw-bold">Schedule</div>
+                </div>
+                <div class="col-6">
+                  <div class="text-secondary fw-bold">Time Log</div>
+                </div>
+                <div class="col-6">
+                  <div class="text-secondary" style="font-size:11px;">SHIFT START</div>
+                  <div class="fw-semibold" id="ot-modal-shift-start">—</div>
+                </div>
+                <div class="col-6">
+                  <div class="text-secondary" style="font-size:11px;">TIME IN</div>
+                  <div class="fw-semibold" id="ot-modal-time-in">—</div>
+                </div>
+                <div class="col-6">
+                  <div class="text-secondary" style="font-size:11px;">SHIFT END</div>
+                  <div class="fw-semibold" id="ot-modal-shift-end">—</div>
+                </div>
+                <div class="col-6">
+                  <div class="text-secondary" style="font-size:11px;">TIME OUT</div>
+                  <div class="fw-semibold" id="ot-modal-time-out">—</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- OT Type toggle -->
+            <div class="mb-3" id="ot-types-elements">
+              <label class="form-label fw-semibold">OT Type</label>
+              <div class="d-flex gap-2">
+                <button type="button" class="btn btn-sm btn-ot-type flex-fill" data-type="pre_shift">
+                  Pre-Shift
+                </button>
+                <button type="button" class="btn btn-sm btn-ot-type flex-fill" data-type="post_shift">
+                  Post-Shift
+                </button>
+              </div>
+            </div>
+
+            <!-- OT Start / End -->
+            <div class="row g-2 mb-3" id="ot-startEnd-elements">
+              <div class="col-6">
+                <label class="form-label">OT Start</label>
+                <input type="time" id="ot-modal-start" class="form-control" />
+              </div>
+              <div class="col-6">
+                <label class="form-label">OT End</label>
+                <input type="time" id="ot-modal-end" class="form-control" />
+              </div>
+            </div>
+
+            <!-- OT Hours (auto-computed) -->
+            <div class="mb-3">
+              <label class="form-label">OT Hours <span class="text-secondary">(auto-computed)</span></label>
+              <input type="text" id="ot-modal-hours" class="form-control" readonly placeholder="Select type to compute" />
+            </div>
+
+            <!-- Remarks -->
+            <div class="mb-1">
+              <label class="form-label">Remarks <span class="text-secondary">(optional)</span></label>
+              <textarea id="ot-modal-remarks" class="form-control" rows="2" placeholder="Optional notes…"></textarea>
+            </div>
+
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-ghost-secondary me-auto" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-ghost-danger" id="btn-ot-reject">Reject</button>
+            <button type="button" class="btn btn-success" id="btn-ot-approve">Approve</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      let _activeRow   = null
+      let _selectedType = null
+
+      // ── Open modal → pre-fill from row data ──────────────────────────────────
+      document.querySelectorAll('.btn-ot-manage').forEach(btn => {
+        btn.addEventListener('click', function () {
+          _activeRow    = this.closest('tr')
+          _selectedType = null
+
+          const rawIn     = _activeRow.dataset.rawTimeIn
+          const rawOut    = _activeRow.dataset.rawTimeOut
+          const shiftStart = _activeRow.dataset.shiftStart
+          const shiftEnd   = _activeRow.dataset.shiftEnd
+
+          // Info display
+          document.getElementById('ot-modal-time-in').textContent    = formatDisplay(rawIn)
+          document.getElementById('ot-modal-time-out').textContent   = formatDisplay(rawOut)
+          document.getElementById('ot-modal-shift-start').textContent = formatDisplay(shiftStart)
+          document.getElementById('ot-modal-shift-end').textContent   = formatDisplay(shiftEnd)
+
+          // Reset fields
+          document.getElementById('ot-modal-start').value   = ''
+          document.getElementById('ot-modal-end').value     = ''
+          document.getElementById('ot-modal-hours').value   = ''
+          document.getElementById('ot-modal-remarks').value = ''
+          document.querySelectorAll('.btn-ot-type').forEach(b => {
+            b.classList.remove('btn-primary')
+            b.classList.add('btn-outline-secondary')
+          })
+
+          // Auto-select type if only one is eligible
+          const hasPreOt  = _activeRow.dataset.hasPreOt  === 'true'
+          const hasPostOt = _activeRow.dataset.hasPostOt === 'true'
+          if (hasPostOt && !hasPreOt) {
+            document.querySelector('.btn-ot-type[data-type="post_shift"]').click()
+          } else if (hasPreOt && !hasPostOt) {
+            document.querySelector('.btn-ot-type[data-type="pre_shift"]').click()
+          }
+          // If both, let Admin choose manually
+        })
+      })
+
+      // ── OT Type toggle → pre-fill start/end ──────────────────────────────────
+      document.querySelectorAll('.btn-ot-type').forEach(btn => {
+        btn.addEventListener('click', function () {
+          document.querySelectorAll('.btn-ot-type').forEach(b => {
+            b.classList.remove('btn-primary')
+            b.classList.add('btn-outline-secondary')
+          })
+          this.classList.remove('btn-outline-secondary')
+          this.classList.add('btn-primary')
+
+          _selectedType = this.dataset.type
+          const rawIn      = _activeRow.dataset.rawTimeIn
+          const rawOut     = _activeRow.dataset.rawTimeOut
+          const shiftStart = _activeRow.dataset.shiftStart
+          const shiftEnd   = _activeRow.dataset.shiftEnd
+
+          if (_selectedType === 'pre_shift') {
+            document.getElementById('ot-modal-start').value = rawIn     || ''
+            document.getElementById('ot-modal-end').value   = shiftStart || ''
+          } else {
+            document.getElementById('ot-modal-start').value = shiftEnd  || ''
+            document.getElementById('ot-modal-end').value   = rawOut    || ''
+          }
+          computeHours()
+        })
+      })
+
+      // ── Auto-compute hours when times change ─────────────────────────────────
+      document.getElementById('ot-modal-start').addEventListener('change', computeHours)
+      document.getElementById('ot-modal-end').addEventListener('change', computeHours)
+
+      function computeHours() {
+        const s = document.getElementById('ot-modal-start').value
+        const e = document.getElementById('ot-modal-end').value
+        if (!s || !e) { document.getElementById('ot-modal-hours').value = ''; return }
+        const diff = (toMins(e) - toMins(s)) / 60
+        document.getElementById('ot-modal-hours').value = diff > 0 ? diff.toFixed(2) + ' hrs' : ''
+      }
+
+      function toMins(t) {
+        const [h, m] = t.split(':').map(Number)
+        return h * 60 + m
+      }
+
+      function formatDisplay(t) {
+        if (!t) return '—'
+        const [h, m] = t.split(':').map(Number)
+        const ampm = h >= 12 ? 'PM' : 'AM'
+        return `${((h % 12) || 12)}:${String(m).padStart(2, '0')} ${ampm}`
+      }
+
+      // ── Submit decision ───────────────────────────────────────────────────────
+      function submitOT(decision) {
+        if (!_activeRow) return
+        if (!_selectedType) { alert('Please select an OT type.'); return }
+        if (decision === 'APPROVED') {
+          const hoursRaw = document.getElementById('ot-modal-hours').value
+          const hours    = parseFloat(hoursRaw)
+          if (!hours || hours <= 0) { alert('OT hours must be greater than 0.'); return }
+        }
+
+        const attId    = _activeRow.dataset.attId
+        const remarks  = document.getElementById('ot-modal-remarks').value
+        const hoursRaw = document.getElementById('ot-modal-hours').value
+        const hours    = parseFloat(hoursRaw) || 0
+        const payload  = {
+          att_id:   attId,
+          decision: decision,
+          ot_type:  _selectedType,
+          ot_hours: decision === 'APPROVED' ? hours : 0,
+          remarks:  remarks,
+        }
+
+        const approveBtn = document.getElementById('btn-ot-approve')
+        const rejectBtn  = document.getElementById('btn-ot-reject')
+        approveBtn.disabled = rejectBtn.disabled = true
+
+        fetch("{% url 'ot_decision' %}", {
+          method:  'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken':  getCookie('csrftoken'),
+          },
+          body: JSON.stringify(payload),
+        })
+        .then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
+        .then(data => {
+          if (data.status === 'updated') {
+            const statusCell  = _activeRow.querySelector('.ot-status-cell')
+            const typeCell    = _activeRow.querySelector('.ot-type-cell')
+            const actionCell  = _activeRow.querySelector('.ot-action-cell')
+            const approvedCell = _activeRow.querySelector('.ot-approved-hrs-cell')
+            const typeLabel   = _selectedType === 'pre_shift' ? 'Pre-Shift Overtime' : 'Post-Shift Overtime'
+            const typeCls     = _selectedType === 'pre_shift' ? 'bg-blue-lt' : 'bg-purple-lt'
+            const hrs         = data.ot_hours
+            const hrsLabel    = `${hrs} hr${hrs !== 1 ? 's' : ''}`
+
+            if (decision === 'APPROVED') {
+              statusCell.innerHTML   = `<span class="badge bg-success-lt">Approved</span>`
+              typeCell.innerHTML     = `<span class="badge ${typeCls}">${typeLabel}</span>`
+              approvedCell.innerHTML = hrsLabel
+            } else {
+              statusCell.innerHTML   = `<span class="badge bg-danger-lt">Rejected</span>`
+              typeCell.innerHTML     = `<span class="badge ${typeCls}">${typeLabel}</span>`
+              approvedCell.innerHTML = `—`
+              alert('Overtime request has been rejected.')
+            }
+            actionCell.innerHTML = `<span class="fw-bold text-blue">Decided</span>`
+
+            tabler.Modal.getInstance(document.getElementById('otManageModal'))?.hide()
+          } else {
+            alert('Unexpected response.')
+          }
+        })
+        .catch(() => alert('Failed to submit. Please try again.'))
+        .finally(() => { approveBtn.disabled = rejectBtn.disabled = false })
+      }
+
+      document.getElementById('btn-ot-approve').addEventListener('click', () => submitOT('APPROVED'))
+      document.getElementById('btn-ot-reject').addEventListener('click',  () => submitOT('REJECTED'))
+
+      function getCookie(name) {
+        let value = null
+        document.cookie.split(';').forEach(c => {
+          const t = c.trim()
+          if (t.startsWith(name + '=')) value = decodeURIComponent(t.slice(name.length + 1))
+        })
+        return value
+      }
+    </script>
+    <script>
+      initTableController({
+        searchId:    'ot-search',
+        pageCountId: 'ot-page-count',
+        paginId:     'ot-pagination',
+        rowSelector: '.ot-row',
+        defaultSize: 8,
+        setFnName:   'setPageSize',
+      });
+    </script>
+    <script>
+      (function () {
+        const param = new URLSearchParams(window.location.search).get('filter')
+        if (!param) return
+        const input = document.getElementById('ot-search')
+        if (!input) return
+        input.value = param
+        input.dispatchEvent(new Event('input'))
+      })()
+    </script>
+    <script src="{% static 'js/tours/requests/ot-approval.js' %}"></script>
+{% endblock %}

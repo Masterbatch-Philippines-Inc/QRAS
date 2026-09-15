@@ -1,0 +1,550 @@
+{% extends "base.django" %}
+{% load static %}
+{% block content %}
+    <div class="page-wrapper">
+      <div class="container-xl mt-5">
+        <div class="d-flex align-items-center justify-content-between" style="margin-bottom:.35rem;">
+          <h2 class="mb-0">Settings</h2>
+          <button id="smart-att-help-btn" class="btn btn-sm btn-ghost-secondary" title="Employee Records page tour">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            &nbsp;Need Help
+          </button>
+        </div>
+        <ol class="breadcrumb text-secondary" aria-label="breadcrumbs" style="margin: 0 0 1rem 0;">
+          <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+          <li class="breadcrumb-item active" aria-current="page">
+            Smart Manual Attendance
+          </li>
+        </ol>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="col">
+              <h3 class="card-title">Upload Attendance Log</h3>
+              <div class="text-muted mt-1">Import attendance records from a scanned log sheet (PDF)</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="row align-items-center g-3">
+              <div class="col-md-5">
+                <label class="form-label">PDF File</label>
+                <input type="file" class="form-control" id="pdfInput" accept=".pdf">
+                <div class="form-hint">Each page = one day. Multi-page PDFs are supported.</div>
+              </div>
+              <div class="col-auto">
+                <button class="btn btn-primary" id="parseBtn" onclick="parsePdf()">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-type-pdf">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                    <path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4" />
+                    <path d="M5 18h1.5a1.5 1.5 0 0 0 0 -3h-1.5v6" />
+                    <path d="M17 18h2" />
+                    <path d="M20 15h-3v6" />
+                    <path d="M11 15v6h1a2 2 0 0 0 2 -2v-2a2 2 0 0 0 -2 -2h-1" />
+                  </svg>
+                  Parse PDF
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="loadingBar" class="d-none mb-3">
+          <div class="card">
+            <div class="card-body text-center py-4">
+              <div class="spinner-border text-primary mb-3" role="status"></div>
+              <div class="text-muted" id="loadingMsg">Reading PDF…</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="alertArea"></div>
+
+        <div id="summaryBar" class="d-none mb-3">
+          <div class="card">
+            <div class="card-body py-2">
+              <div class="d-flex flex-wrap gap-2 align-items-center">
+                <span class="badge bg-success-lt fs-6 px-3 py-2" id="statMatched">0 Matched</span>
+                <span class="badge bg-danger-lt fs-6 px-3 py-2" id="statUnmatched">0 Unmatched</span>
+                <span class="badge bg-secondary-lt fs-6 px-3 py-2" id="statSkipped">0 Skipped</span>
+                <div class="ms-auto d-flex gap-2">
+                  <button class="btn btn-outline-secondary btn-sm" onclick="uploadNew()">Upload New</button>
+                  <button class="btn btn-success" id="saveAllBtn" onclick="saveAll()">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24"
+                      viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                      <path d="M6 4h10l4 4v10a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2"/>
+                      <path d="M12 14m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/>
+                      <path d="M14 4l0 4l-6 0l0 -4"/>
+                    </svg>
+                    Save All Records
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="saveResult" class="d-none mb-3"></div>
+
+        <div id="previewContainer"></div>
+
+      </div>
+    </div>
+    <script>
+      // ── Employees list from server ────────────────────────────────────────────
+      const EMPLOYEES = JSON.parse('{{ employees_json|escapejs }}');
+
+      // ── App state ─────────────────────────────────────────────────────────────
+      let state = { pages: [] };
+
+      // ─────────────────────────────────────────────────────────────────────────
+      //  CSRF helper
+      // ─────────────────────────────────────────────────────────────────────────
+      function getCsrf() {
+        return document.cookie.split(';')
+          .map(c => c.trim())
+          .find(c => c.startsWith('csrftoken='))
+          ?.split('=')[1] || '';
+      }
+
+      // ─────────────────────────────────────────────────────────────────────────
+      //  UI helpers
+      // ─────────────────────────────────────────────────────────────────────────
+      function showLoading(show, msg = 'Parsing PDF…') {
+        document.getElementById('loadingBar').classList.toggle('d-none', !show);
+        document.getElementById('loadingMsg').textContent = msg;
+        document.getElementById('parseBtn').disabled = show;
+      }
+
+      function showAlert(msg, type = 'danger') {
+        document.getElementById('alertArea').innerHTML = `
+          <div class="alert alert-${type} alert-dismissible mb-3" role="alert">
+            ${msg}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>`;
+      }
+
+      function clearAlert() {
+        document.getElementById('alertArea').innerHTML = '';
+      }
+
+      function formatDate(iso) {
+        if (!iso) return '(no date detected)';
+        const d = new Date(iso + 'T00:00:00');
+        return d.toLocaleDateString('en-PH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      }
+
+      function fmtTime(hhmm) {
+        if (!hhmm) return '—';
+        const h = parseInt(hhmm.slice(0, 2));
+        const m = hhmm.slice(2);
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const h12  = h % 12 || 12;
+        return `${h12}:${m} ${ampm}`;
+      }
+
+      // ─────────────────────────────────────────────────────────────────────────
+      //  STATS
+      // ─────────────────────────────────────────────────────────────────────────
+      function computeStats() {
+        let matched = 0, unmatched = 0, skipped = 0;
+        state.pages.forEach(p => p.rows.forEach(r => {
+          if (r.skip)                            skipped++;
+          else if (r.match_status === 'matched') matched++;
+          else                                   unmatched++;
+        }));
+        return { matched, unmatched, skipped };
+      }
+
+      function updateStats() {
+        const { matched, unmatched, skipped } = computeStats();
+        document.getElementById('statMatched').textContent   = `${matched} Matched`;
+        document.getElementById('statUnmatched').textContent = `${unmatched} Unmatched`;
+        document.getElementById('statSkipped').textContent   = `${skipped} Skipped`;
+
+        const saveBtn = document.getElementById('saveAllBtn');
+        const total   = matched + unmatched;
+        saveBtn.disabled = unmatched > 0;
+        if (unmatched > 0) {
+          saveBtn.title = `Resolve ${unmatched} unmatched employee(s) before saving`;
+        } else {
+          saveBtn.title = '';
+        }
+      }
+
+      // ─────────────────────────────────────────────────────────────────────────
+      //  RENDER
+      // ─────────────────────────────────────────────────────────────────────────
+      function renderAll() {
+        const scrollY = window.scrollY;
+        const container = document.getElementById('previewContainer');
+        container.innerHTML = '';
+
+        if (!state.pages.length) return;
+
+        document.getElementById('summaryBar').classList.remove('d-none');
+
+        state.pages.forEach((page, pi) => {
+          const div = document.createElement('div');
+          div.innerHTML = buildPageHTML(page, pi);
+          container.appendChild(div);
+        });
+
+        updateStats();
+        window.scrollTo(0, scrollY);
+      }
+
+      function buildPageHTML(page, pi) {
+        const dateLabel = page.date ? formatDate(page.date) : '<span class="text-danger">Date not detected</span>';
+        const errBadge  = page.error ? `<span class="badge bg-danger ms-2">${page.error}</span>` : '';
+        const rowCount  = page.rows.length;
+
+        const rows = page.rows.map((row, ri) => buildRowHTML(row, pi, ri)).join('');
+
+        return `
+          <div class="card mb-3">
+            <div class="card-header">
+              <div>
+                <h4 class="card-title mb-0">Page ${page.page} — ${dateLabel} ${errBadge}</h4>
+                <small class="text-muted">${rowCount} row${rowCount !== 1 ? 's' : ''} parsed</small>
+              </div>
+            </div>
+            ${rowCount ? `
+            <div class="table-responsive">
+              <table class="table table-hover table-sm table-vcenter mb-0">
+                <thead>
+                  <tr>
+                    <th style="width:40px">#</th>
+                    <th style="min-width:160px">Parsed Name</th>
+                    <th style="min-width:180px">Matched Employee</th>
+                    <th>In 1</th>
+                    <th>Out 1</th>
+                    <th>In 2</th>
+                    <th>Out 2</th>
+                    <th style="min-width:110px">Remarks</th>
+                    <th>Status</th>
+                    <th style="width:110px"></th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-${pi}">
+                  ${rows}
+                </tbody>
+              </table>
+            </div>` : `<div class="card-body text-muted">No rows could be parsed on this page.</div>`}
+          </div>`;
+      }
+
+      function buildRowHTML(row, pi, ri) {
+        const t = row.time_pairs || [];
+        const t1in  = t[0] ? (t[0][0] || '') : '';
+        const t1out = t[0] ? (t[0][1] || '') : '';
+        const t2in  = t[1] ? (t[1][0] || '') : '';
+        const t2out = t[1] ? (t[1][1] || '') : '';
+
+        const skipClass = row.skip ? 'text-decoration-line-through text-muted' : '';
+
+        let empCell;
+        if (row.match_status === 'matched') {
+          empCell = `<span>${row.employee_display || ''}</span>`;
+        } else {
+          const opts = EMPLOYEES.map(e =>
+            `<option value="${e.id}" ${e.id == row.employee_id ? 'selected' : ''}>${e.last_name}, ${e.first_name}</option>`
+          ).join('');
+          empCell = `
+            <select class="form-select form-select-sm" style="min-width:160px"
+              onchange="assignEmployee(${pi}, ${ri}, this.value, this.options[this.selectedIndex].text)">
+              <option value="">— select employee —</option>
+              ${opts}
+            </select>`;
+        }
+
+        const statusBadge = row.skip
+          ? '<span class="badge bg-secondary">Skipped</span>'
+          : row.match_status === 'matched'
+            ? '<span class="badge bg-success-lt text-success">Matched</span>'
+            : '<span class="badge bg-danger-lt text-danger">Unmatched</span>';
+
+        const skipLabel  = row.skip ? 'Restore' : 'Skip';
+        const skipOutline = row.skip ? 'btn-outline-secondary' : 'btn-outline-warning';
+
+        return `
+          <tr id="tr-${pi}-${ri}" class="${skipClass}">
+            <td class="text-muted">${row.row_num}</td>
+            <td><small class="text-muted font-monospace">${row.name_raw}</small></td>
+            <td>${empCell}</td>
+            <td>${fmtTime(t1in)}</td>
+            <td>${fmtTime(t1out)}</td>
+            <td>${fmtTime(t2in)}</td>
+            <td>${fmtTime(t2out)}</td>
+            <td><small>${row.remarks || '—'}</small></td>
+            <td>${statusBadge}</td>
+            <td>
+              <button class="btn btn-sm btn-outline-primary me-1" onclick="editRow(${pi}, ${ri})" ${row.skip ? 'disabled' : ''}>Edit</button>
+              <button class="btn btn-sm ${skipOutline}" onclick="toggleSkip(${pi}, ${ri})">${skipLabel}</button>
+            </td>
+          </tr>`;
+      }
+
+      // ─────────────────────────────────────────────────────────────────────────
+      //  EDIT ROW — replace <tr> content with inputs in-place
+      // ─────────────────────────────────────────────────────────────────────────
+      function editRow(pi, ri) {
+        const row = state.pages[pi].rows[ri];
+        const tr  = document.getElementById(`tr-${pi}-${ri}`);
+
+        const t = row.time_pairs || [];
+        const t1in  = t[0] ? (t[0][0] || '') : '';
+        const t1out = t[0] ? (t[0][1] || '') : '';
+        const t2in  = t[1] ? (t[1][0] || '') : '';
+        const t2out = t[1] ? (t[1][1] || '') : '';
+
+        const empOpts = EMPLOYEES.map(e =>
+          `<option value="${e.id}" ${e.id == row.employee_id ? 'selected' : ''}>${e.last_name}, ${e.first_name}</option>`
+        ).join('');
+
+        const timeInput = (id, val) =>
+          `<input type="text" class="form-control form-control-sm font-monospace"
+            id="${id}" value="${val}" maxlength="4" placeholder="HHMM"
+            style="width:68px" oninput="this.value=this.value.replace(/\\D/g,'')">`;
+
+        tr.innerHTML = `
+          <td class="text-muted">${row.row_num}</td>
+          <td><small class="text-muted font-monospace">${row.name_raw}</small></td>
+          <td>
+            <select class="form-select form-select-sm" id="edit-emp-${pi}-${ri}" style="min-width:160px">
+              <option value="">— select —</option>
+              ${empOpts}
+            </select>
+          </td>
+          <td>${timeInput(`edit-t1in-${pi}-${ri}`, t1in)}</td>
+          <td>${timeInput(`edit-t1out-${pi}-${ri}`, t1out)}</td>
+          <td>${timeInput(`edit-t2in-${pi}-${ri}`, t2in)}</td>
+          <td>${timeInput(`edit-t2out-${pi}-${ri}`, t2out)}</td>
+          <td>
+            <input type="text" class="form-control form-control-sm" id="edit-remarks-${pi}-${ri}"
+              value="${row.remarks || ''}" style="min-width:100px">
+          </td>
+          <td></td>
+          <td>
+            <button class="btn btn-sm btn-primary me-1" onclick="saveRow(${pi}, ${ri})">Save</button>
+            <button class="btn btn-sm btn-ghost-secondary" onclick="cancelEdit(${pi}, ${ri})">Cancel</button>
+          </td>`;
+      }
+
+      function saveRow(pi, ri) {
+        const row = state.pages[pi].rows[ri];
+
+        const empSel  = document.getElementById(`edit-emp-${pi}-${ri}`);
+        const t1in    = document.getElementById(`edit-t1in-${pi}-${ri}`).value.trim();
+        const t1out   = document.getElementById(`edit-t1out-${pi}-${ri}`).value.trim();
+        const t2in    = document.getElementById(`edit-t2in-${pi}-${ri}`).value.trim();
+        const t2out   = document.getElementById(`edit-t2out-${pi}-${ri}`).value.trim();
+        const remarks = document.getElementById(`edit-remarks-${pi}-${ri}`).value.trim();
+
+        // Validate times (must be exactly 4 digits if not empty)
+        const timeFields = { 'Time In 1': t1in, 'Time Out 1': t1out, 'Time In 2': t2in, 'Time Out 2': t2out };
+        for (const [label, val] of Object.entries(timeFields)) {
+          if (val && (val.length !== 4 || isNaN(val))) {
+            showAlert(`${label} must be 4 digits (e.g. 0730) or empty.`);
+            return;
+          }
+        }
+
+        // Update employee
+        if (empSel.value) {
+          row.employee_id      = parseInt(empSel.value);
+          row.employee_display = empSel.options[empSel.selectedIndex].text;
+          row.match_status     = 'matched';
+        }
+
+        // Rebuild time pairs
+        const pairs = [];
+        if (t1in) pairs.push([t1in, t1out || null]);
+        if (t2in) pairs.push([t2in, t2out || null]);
+        row.time_pairs = pairs;
+        row.remarks    = remarks;
+
+        clearAlert();
+        renderAll();
+      }
+
+      function cancelEdit(pi, ri) {
+        renderAll();
+      }
+
+      // ─────────────────────────────────────────────────────────────────────────
+      //  ASSIGN EMPLOYEE (inline dropdown for unmatched rows in view mode)
+      // ─────────────────────────────────────────────────────────────────────────
+      function assignEmployee(pi, ri, empId, empText) {
+        const row = state.pages[pi].rows[ri];
+        if (empId) {
+          row.employee_id      = parseInt(empId);
+          row.employee_display = empText;
+          row.match_status     = 'matched';
+        } else {
+          row.employee_id      = null;
+          row.employee_display = null;
+          row.match_status     = 'unmatched';
+        }
+        updateStats();
+      }
+
+      // ─────────────────────────────────────────────────────────────────────────
+      //  SKIP / RESTORE ROW
+      // ─────────────────────────────────────────────────────────────────────────
+      function toggleSkip(pi, ri) {
+        state.pages[pi].rows[ri].skip = !state.pages[pi].rows[ri].skip;
+        renderAll();
+      }
+
+      // ─────────────────────────────────────────────────────────────────────────
+      //  UPLOAD NEW — reset everything
+      // ─────────────────────────────────────────────────────────────────────────
+      function uploadNew() {
+        state = { pages: [] };
+        document.getElementById('pdfInput').value        = '';
+        document.getElementById('previewContainer').innerHTML = '';
+        document.getElementById('summaryBar').classList.add('d-none');
+        document.getElementById('saveResult').classList.add('d-none');
+        clearAlert();
+      }
+
+      // ─────────────────────────────────────────────────────────────────────────
+      //  PARSE PDF
+      // ─────────────────────────────────────────────────────────────────────────
+      async function parsePdf() {
+        const file = document.getElementById('pdfInput').files[0];
+        if (!file) {
+          showAlert('Please select a PDF file first.', 'warning');
+          return;
+        }
+
+        clearAlert();
+        showLoading(true, 'Extracting text from PDF…');
+
+        const formData = new FormData();
+        formData.append('pdf', file);
+        formData.append('csrfmiddlewaretoken', getCsrf());
+
+        try {
+          const resp = await fetch('{% url "scan-upload-parse" %}', {
+            method: 'POST',
+            body: formData,
+          });
+          const data = await resp.json();
+
+          if (data.error) {
+            showAlert(data.error);
+            return;
+          }
+
+          state.pages = data.pages;
+          renderAll();
+
+          const { unmatched } = computeStats();
+          if (unmatched > 0) {
+            showAlert(
+              `<strong>${unmatched} employee name(s)</strong> could not be matched automatically. ` +
+              `Use the dropdown on unmatched rows to assign them before saving.`,
+              'warning'
+            );
+          }
+
+        } catch (err) {
+          showAlert(`Request failed: ${err}`);
+        } finally {
+          showLoading(false);
+        }
+      }
+
+      // ─────────────────────────────────────────────────────────────────────────
+      //  SAVE ALL
+      // ─────────────────────────────────────────────────────────────────────────
+      async function saveAll() {
+        const { unmatched } = computeStats();
+        if (unmatched > 0) {
+          showAlert(`Please resolve all unmatched employees (${unmatched} remaining) before saving.`, 'warning');
+          return;
+        }
+
+        // Collect non-skipped, matched rows
+        const records = [];
+        state.pages.forEach(page => {
+          page.rows.forEach(row => {
+            if (row.skip || !row.employee_id) return;
+            records.push({
+              row_num:     row.row_num,
+              employee_id: row.employee_id,
+              date:        row.date,
+              time_pairs:  row.time_pairs,
+              name_raw:    row.name_raw,
+            });
+          });
+        });
+
+        if (!records.length) {
+          showAlert('No records to save (all rows are skipped or have no employee).', 'warning');
+          return;
+        }
+
+        const saveBtn = document.getElementById('saveAllBtn');
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving…';
+
+        try {
+          const resp = await fetch('{% url "scan-upload-save" %}', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken':  getCsrf(),
+            },
+            body: JSON.stringify({ records }),
+          });
+          const data = await resp.json();
+
+          const resultDiv = document.getElementById('saveResult');
+          resultDiv.classList.remove('d-none');
+
+          if (data.errors && data.errors.length) {
+            const errList = data.errors.map(e =>
+              `<li>Row ${e.row} — ${e.name || ''}: <em>${e.error}</em></li>`
+            ).join('');
+            resultDiv.innerHTML = `
+              <div class="alert alert-warning alert-dismissible mb-3">
+                <strong>${data.saved} record(s) saved.</strong>
+                ${data.errors.length} error(s):
+                <ul class="mb-0 mt-1">${errList}</ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>`;
+          } else {
+            resultDiv.innerHTML = `
+              <div class="alert alert-success alert-dismissible mb-3">
+                <strong>✓ ${data.saved} attendance record(s) saved successfully.</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>`;
+          }
+
+          window.scrollTo(0, 0);
+
+        } catch (err) {
+          showAlert(`Save failed: ${err}`);
+        } finally {
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24"
+              viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+              <path d="M6 4h10l4 4v10a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2"/>
+              <path d="M12 14m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/>
+              <path d="M14 4l0 4l-6 0l0 -4"/>
+            </svg>
+            Save All Records`;
+        }
+      }
+    </script>
+    <script src="{% static 'js/tours/attendance/smart-manual-att.js' %}"></script>
+{% endblock %}

@@ -65,8 +65,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                # 'apps.qras.modules.authentication.context_processors.user_permissions',
-                # 'apps.qras.modules.authentication.context_processors.clock_offset',
+                'apps.qras.modules.auth.context_processors.user_permissions',
+                'apps.qras.modules.auth.context_processors.clock_offset',
             ],
         },
     },
@@ -219,3 +219,4 @@ LOGGING = {
 }
 
 CLOCK_OFFSET_MINUTES = config('CLOCK_OFFSET_MINUTES', default=5, cast=int)
+AUTH_USER_MODEL = 'qras.User'

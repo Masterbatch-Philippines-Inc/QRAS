@@ -1,0 +1,30 @@
+{% load static %}
+  <!-- ═══════════════════════════════════════════
+      MODAL — Assign Missed Logs
+  ═══════════════════════════════════════════ -->
+  <div class="modal modal-blur fade" id="MLassignModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Assign Missing Time</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <button id="ml-assign-modal-close" data-bs-dismiss="modal" style="display:none;"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-secondary mb-3">
+            <span id="ml-modal-employee" class="fw-semibold text-body"></span><br>
+            <span id="ml-modal-date"></span> —
+            Missing: <span id="ml-modal-type" class="fw-semibold text-orange"></span>
+          </p>
+          <div class="mb-0">
+            <label class="form-label">Assign Time</label>
+            <input type="time" id="ml-assign-time" class="form-control" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost-secondary me-auto" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="btn-confirm-ml-assign">Submit</button>
+        </div>
+      </div>
+    </div>
+  </div>

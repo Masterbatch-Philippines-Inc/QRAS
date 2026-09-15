@@ -1,0 +1,442 @@
+{% extends 'base.django' %}
+{% load static %}
+{% block content %}
+    <div class="page-wrapper">
+      {% if dept_warning %}
+      <div class="container-xl mt-4">
+        <div class="alert alert-warning d-flex gap-2 align-items-center">
+          <i class="ti ti-alert-triangle flex-shrink-0"></i>
+          Your account is not assigned to a department. Contact your administrator to get access.
+        </div>
+      </div>
+      {% endif %}
+      <div class="container-xl mt-5">
+        <div class="d-flex align-items-center justify-content-between" style="margin-bottom:.35rem;">
+          <h2 class="mb-0">Settings</h2>
+          <button id="tours-empgrp-help-btn" class="btn btn-sm btn-ghost-secondary" title="Employee Records page tour">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            &nbsp;Need Help
+          </button>
+        </div>
+        <ol class="breadcrumb text-secondary" aria-label="breadcrumbs" style="margin: 0 0 1rem 0;">
+          <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Employee Groups</li>
+        </ol>
+
+        <div class="row g-3">
+
+          <!-- ─── Group Table ─── -->
+          <div class="col-md-7">
+            <div class="card">
+              <div class="card-table">
+                <div class="card-header">
+                  <div class="row w-full align-items-center">
+                    <div class="col">
+                      <h3 class="card-title mb-0">Group Records</h3>
+                      <p class="text-secondary m-0" style="font-size:13px;">Manage employee groups and OT exemption policies.</p>
+                    </div>
+                    <div class="col-auto">
+                      <div class="d-flex gap-2 align-items-center">
+                        <!-- SEARCH -->
+                        <div class="input-group input-group-flat w-auto">
+                          <span class="input-group-text">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/>
+                            </svg>
+                          </span>
+                          <input id="empgrp-search" type="text" class="form-control" autocomplete="off" placeholder="Search…" />
+                        </div>
+                        <!-- FORM -->
+                        <form method="GET" class="d-flex gap-2 align-items-center mb-0">
+                          <label class="form-check form-switch mb-0"
+                                data-bs-toggle="tooltip" data-bs-placement="top"
+                                title="Toggle to include inactive groups">
+                            <input class="form-check-input" type="checkbox" name="show_inactive" value="true"
+                                  {% if show_inactive %}checked{% endif %}
+                                  onchange="this.form.submit()">
+                          </label>
+                        </form>
+                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalCreateGroup">
+                          <i class="ti ti-plus me-1"></i>New Group
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-vcenter table-hover card-table" id="tours-empgrp-rec">
+                  <thead>
+                    <tr>
+                      <th>Group Name</th>
+                      <th>OT Exempted</th>
+                      <th>Members</th>
+                      {% if show_inactive %}<th>Status</th>{% endif %}
+                      <th class="w-1">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for group in groups %}
+                    <tr class="empgrp-row">
+                      <td class="fw-medium">{{ group.group_name }}</td>
+                      <td>
+                        {% if group.ot_filing_exempted %}
+                          <span class="badge bg-blue-lt">Exempted</span>
+                        {% else %}
+                          <span class="badge bg-secondary-lt">Not Exempted</span>
+                        {% endif %}
+                      </td>
+                      <td>{{ group.member_count }}</td>
+                      {% if show_inactive %}
+                      <td>
+                        {% if group.is_active %}
+                          <span class="badge bg-green-lt">Active</span>
+                        {% else %}
+                          <span class="badge bg-red-lt">Inactive</span>
+                        {% endif %}
+                      </td>
+                      {% endif %}
+                      <td>
+                        <div class="d-flex gap-2">
+                          <button class="btn btn-sm btn-ghost-danger btn-toggle-group"
+                                  data-id="{{ group.id }}"
+                                  data-name="{{ group.group_name }}"
+                                  data-active="{% if group.is_active %}1{% else %}0{% endif %}">
+                            {% if group.is_active %}Deactivate{% else %}Restore{% endif %}
+                          </button>
+                          <button class="btn btn-sm btn-primary btn-edit-group"
+                                  data-id="{{ group.id }}"
+                                  data-name="{{ group.group_name }}"
+                                  data-ot="{{ group.ot_filing_exempted|yesno:'true,false' }}"
+                                  data-bs-toggle="modal"
+                                  data-bs-target="#modalEditGroup">
+                            Edit
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    {% empty %}
+                    <tr class="tc-django-empty">
+                      <td colspan="5" class="text-center text-secondary py-5">
+                        <i class="ti ti-users-off fs-1 d-block mb-2"></i>
+                        No groups found.
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              <div class="card-footer d-flex align-items-center">
+                <div class="dropdown clzst">
+                  <a class="btn dropdown-toggle" data-bs-toggle="dropdown">
+                    <span id="empgrp-page-count" class="me-1">8</span> records
+                  </a>
+                  <div class="dropdown-menu">
+                    <a class="dropdown-item" onclick="setPageSize(8)">8 records</a>
+                    <a class="dropdown-item" onclick="setPageSize(20)">20 records</a>
+                    <a class="dropdown-item" onclick="setPageSize(50)">50 records</a>
+                  </div>
+                </div>
+                <ul class="pagination m-0 ms-auto" id="empgrp-pagination"></ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- ─── Assign Group ─── -->
+          <div class="col-md-5">
+            <div class="card">
+              <div class="card-header">
+                <div class="col">
+                  <h3 class="card-title mb-0">Assign Group</h3>
+                  <p class="text-secondary m-0" style="font-size:13px;">Assign one or more employees to a group.</p>
+                </div>
+              </div>
+              <div class="card-body">
+
+                <div class="mb-3">
+                  <label class="form-label required">Group</label>
+                  <select id="assign-group-select" class="form-select">
+                    <option value="">— Select group —</option>
+                    {% for group in active_groups %}
+                    <option value="{{ group.id }}">{{ group.group_name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label required">Employees</label>
+                  <div class="d-flex gap-2 mb-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-select-all">Select All</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-deselect-all">Deselect All</button>
+                  </div>
+                  <div class="input-group input-group-flat mb-2">
+                    <span class="input-group-text">
+                      <i class="ti ti-search" style="font-size:14px;"></i>
+                    </span>
+                    <input type="text" id="employee-filter" class="form-control form-control-sm" placeholder="Filter employees…">
+                  </div>
+                  <div id="employee-list" style="max-height:300px; overflow-y:auto; border:1px solid var(--tblr-border-color); border-radius:4px;">
+                    <table class="table table-sm table-vcenter mb-0">
+                      <thead>
+                        <tr>
+                          <th></th>
+                          <th>Employee</th>
+                          <th>Employee Group</th>
+                          <th class="text-center">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for emp in employees %}
+                        <tr class="employee-item"
+                            data-search="{{ emp.last_name }} {{ emp.first_name }} {{ emp.department.name|default:'' }} {{ emp.position.title|default:'' }}">
+                          <td class="w-1 ps-2">
+                            <input type="checkbox" class="form-check-input emp-checkbox m-0" value="{{ emp.employee_id }}">
+                          </td>
+                          <td>
+                            <div class="fw-medium" style="font-size:13px;">{{ emp.last_name }}, {{ emp.first_name }}</div>
+                            <div class="text-secondary" style="font-size:11px;">{{ emp.position|default:"No pos." }}</div>
+                          </td>
+                          <td>
+                            {% if emp.current_memberships %}
+                              {% for m in emp.current_memberships %}
+                                <div class="d-flex align-items-center">
+                                  <em class="text-secondary" style="font-size:13px;">{{ m.group.group_name }}</em>
+                                </div>
+                              {% endfor %}
+                            {% endif %}
+                          </td>
+                          <td class="pe-2">
+                            {% if emp.current_memberships %}
+                              {% for m in emp.current_memberships %}
+                                  <button type="button"
+                                          class="btn btn-sm btn-ghost-danger btn-unassign"
+                                          data-bs-toggle="modal"
+                                          data-bs-target="#unassignGroupModal"
+                                          data-employee-id="{{ emp.employee_id }}"
+                                          data-group-id="{{ m.group.id }}">
+                                    Unassign
+                                  </button>
+                              {% endfor %}
+                            {% endif %}
+                          </td>
+                        </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="mt-1 text-secondary" style="font-size:12px;">
+                    <span id="selected-count">0</span> selected
+                  </div>
+                </div>
+
+                <div id="assign-alert" class="alert d-none mb-3"></div>
+                <button id="btn-assign" class="btn btn-primary w-100" disabled>Assign Group</button>
+
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const csrfToken = '{{ csrf_token }}';
+
+      function showErrors(id, errors) {
+        const el = document.getElementById(id);
+        el.innerHTML = Object.values(errors).map(e => `<div>${e}</div>`).join('');
+        el.classList.remove('d-none');
+      }
+
+      function hideErrors(id) {
+        const el = document.getElementById(id);
+        el.innerHTML = '';
+        el.classList.add('d-none');
+      }
+
+      // ── CREATE ────────────────────────────────────────
+      document.getElementById('btnCreateGroup')?.addEventListener('click', async () => {
+        hideErrors('createGroupErrors');
+        const body = new FormData();
+        body.append('group_name',         document.getElementById('createGroupName').value);
+        body.append('ot_filing_exempted', document.getElementById('createGroupOt').checked ? 'true' : 'false');
+
+        const res  = await fetch('{% url "group-create" %}', { method: 'POST', headers: { 'X-CSRFToken': csrfToken }, body });
+        const data = await res.json();
+        if (data.success) {
+          alert("Employee group created!");
+          location.reload();
+        } 
+        else showErrors('createGroupErrors', data.errors);
+      });
+
+      // ── EDIT — open ───────────────────────────────────
+      document.getElementById('modalEditGroup')?.addEventListener('show.bs.modal', function (e) {
+        const btn = e.relatedTarget;
+        document.getElementById('editGroupId').value   = btn.dataset.id;
+        document.getElementById('editGroupName').value = btn.dataset.name;
+        document.getElementById('editGroupOt').checked = btn.dataset.ot === 'true';
+        hideErrors('editGroupErrors');
+      });
+
+      // ── EDIT — save ───────────────────────────────────
+      document.getElementById('btnEditGroup')?.addEventListener('click', async () => {
+        hideErrors('editGroupErrors');
+        const id   = document.getElementById('editGroupId').value;
+        const body = new FormData();
+        body.append('group_name',         document.getElementById('editGroupName').value);
+        body.append('ot_filing_exempted', document.getElementById('editGroupOt').checked ? 'true' : 'false');
+
+        const url  = `{% url "group-update" 0 %}`.replace('0', id);
+        const res  = await fetch(url, { method: 'POST', headers: { 'X-CSRFToken': csrfToken }, body });
+        const data = await res.json();
+        if (data.success) {
+          alert("Edit Completed");
+          location.reload();
+        } 
+        else showErrors('editGroupErrors', data.errors);
+      });
+
+      // ── SOFT DELETE / RESTORE ─────────────────────────
+      document.querySelectorAll('.btn-toggle-group').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const label = btn.dataset.active === '1' ? 'deactivate' : 'restore';
+          if (!confirm(`Are you sure you want to ${label} "${btn.dataset.name}"?`)) return;
+          const url  = `{% url "group-delete" 0 %}`.replace('0', btn.dataset.id);
+          const res  = await fetch(url, { method: 'POST', headers: { 'X-CSRFToken': csrfToken } });
+          const data = await res.json();
+          if (data.success) {
+          alert("Employee group deactived.");
+          location.reload();
+        } 
+          else alert(data.message);
+        });
+      });
+
+      // ── EMPLOYEE FILTER ───────────────────────────────
+      document.getElementById('employee-filter')?.addEventListener('input', function () {
+        const q = this.value.toLowerCase();
+        document.querySelectorAll('.employee-item').forEach(item => {
+          if (item.dataset.search.toLowerCase().includes(q)) {
+            item.style.removeProperty('display');
+          } else {
+            item.style.setProperty('display', 'none', 'important');
+          }
+        });
+      });
+
+      // ── SELECT ALL / DESELECT ─────────────────────────
+      document.getElementById('btn-select-all')?.addEventListener('click', () => {
+        document.querySelectorAll('.emp-checkbox').forEach(cb => {
+          if (cb.closest('.employee-item').style.getPropertyValue('display') !== 'none') cb.checked = true;
+        });
+        updateCount();
+      });
+
+      document.getElementById('btn-deselect-all')?.addEventListener('click', () => {
+        document.querySelectorAll('.emp-checkbox').forEach(cb => cb.checked = false);
+        updateCount();
+      });
+
+      document.querySelectorAll('.emp-checkbox').forEach(cb => cb.addEventListener('change', updateCount));
+      document.getElementById('assign-group-select')?.addEventListener('change', updateCount);
+
+      function updateCount() {
+        const n = document.querySelectorAll('.emp-checkbox:checked').length;
+        document.getElementById('selected-count').textContent = n;
+        document.getElementById('btn-assign').disabled =
+          n === 0 || !document.getElementById('assign-group-select').value;
+      }
+
+      // ── ASSIGN ────────────────────────────────────────
+      document.getElementById('btn-assign')?.addEventListener('click', async function () {
+        const alertEl = document.getElementById('assign-alert');
+        const groupId = document.getElementById('assign-group-select').value;
+        const empIds  = [...document.querySelectorAll('.emp-checkbox:checked')].map(cb => parseInt(cb.value));
+
+        this.disabled  = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Assigning…';
+
+        try {
+          const res  = await fetch('{% url "group-assign" %}', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body:    JSON.stringify({ group_id: groupId, employee_ids: empIds }),
+          });
+          const data = await res.json();
+          if (data.error) {
+            alertEl.className   = 'alert alert-danger mb-3';
+            alertEl.textContent = data.error;
+            alertEl.classList.remove('d-none');
+          } else {
+            alertEl.className   = 'alert alert-success mb-3';
+            alertEl.textContent = `${data.updated} employee(s) assigned to "${data.group_name}".`;
+            alertEl.classList.remove('d-none');
+            document.querySelectorAll('.emp-checkbox').forEach(cb => cb.checked = false);
+            updateCount();
+          }
+        } catch {
+          alertEl.className   = 'alert alert-danger mb-3';
+          alertEl.textContent = 'Assignment failed. Please try again.';
+          alertEl.classList.remove('d-none');
+        }
+
+        this.disabled    = false;
+        this.textContent = 'Assign Group';
+      });
+
+      // ── UNASSIGN — open modal ─────────────────────────
+      document.addEventListener('click', async function (e) {
+        const btn = e.target.closest('.btn-unassign');
+        if (!btn) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        const empId  = btn.dataset.employeeId;
+        const grpId  = btn.dataset.groupId;
+        const res    = await fetch(`{% url 'group-unassign' %}?employee_id=${empId}&group_id=${grpId}`);
+        const data   = await res.json();
+
+        if (data.error) { alert(data.error); return; }
+
+        document.getElementById('unassign-emp-name').textContent  = data.employee_name;
+        document.getElementById('unassign-group-name').textContent = data.group_name;
+        document.getElementById('unassign-emp-id').value           = data.employee_id;
+        document.getElementById('unassign-group-id').value         = data.group_id;
+      });
+
+      // ── UNASSIGN — confirm ────────────────────────────
+      document.getElementById('btn-confirm-unassign-empGroup')?.addEventListener('click', async function () {
+        const empId  = document.getElementById('unassign-emp-id').value;
+        const grpId  = document.getElementById('unassign-group-id').value;
+        const res    = await fetch('{% url "group-unassign" %}', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+          body:    JSON.stringify({ employee_id: empId, group_id: grpId }),
+        });
+        const data = await res.json();
+        if (data.status === 'unassigned') {
+          alert(data.message);
+          location.reload();
+        } else {
+          alert(data.error || 'Unassign failed.');
+        }
+      });
+    </script>
+    <script>
+      initTableController({
+        searchId:    'empgrp-search',
+        pageCountId: 'empgrp-page-count',
+        paginId:     'empgrp-pagination',
+        rowSelector: '.empgrp-row',
+        defaultSize: 8,
+        setFnName:   'setPageSize',
+      });
+    </script>
+    <script src="{% static 'js/tours/settings/employee-group.js' %}"></script>
+{% endblock %}

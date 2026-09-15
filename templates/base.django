@@ -22,17 +22,15 @@
 
   <body class="antialiased">
     {% include 'components/global/sidebar.django' %}
-    {% comment %} {% include 'components/global/modal.django' %}
+    {% include 'components/global/modal.django' %}
     {% include 'components/shared/toast.django' %}
-    {% include 'components/shared/toast_modal.django' %} {% endcomment %}
-    {% comment %} {% if user.is_authenticated %} {% endcomment %}
+    {% include 'components/shared/toast_modal.django' %}
     <main class="page">
       {% block content %}{% endblock %}
       {% include 'components/global/footer.django' %}
     </main>
-    {% comment %} {% endif %} {% endcomment %}
     {% include 'components/shared/scroller.django' %}
-    {% comment %} <script>window.CLOCK_OFFSET_MINUTES = {{ CLOCK_OFFSET_MINUTES }};</script> {% endcomment %}
+    <script>window.CLOCK_OFFSET_MINUTES = {{ CLOCK_OFFSET_MINUTES }};</script>
     <script src="{% static 'js/libraries/imask.js' %}"></script>
     <script src="{% static 'js/libraries/tabler.js' %}"></script>
     <script src="{% static 'js/libraries/imask_custom.js' %}"></script>
@@ -46,7 +44,7 @@
       window.Shepherd = Shepherd;
     </script>
     <script src="{% static 'js/libraries/shepherd.js' %}"></script>
-    {% comment %} {% block scripts %}{% endblock %} {% endcomment %}
+    {% block scripts %}{% endblock %}
   </body>
 
 </html>

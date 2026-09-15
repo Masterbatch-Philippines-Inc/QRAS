@@ -1,0 +1,36 @@
+{% load static %}
+  <!-- ══════════════════════════════════════════════════════════════
+      MODAL — Role Assigned Users
+  ═══════════════════════════════════════════════════════════════ -->
+  <div class="modal modal-blur fade" id="roleUsersModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="roleUsersTitle">Assigned Users</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-0">
+          <div id="roleUsersError" class="alert alert-danger d-none mx-3 mt-3"></div>
+          <table class="table table-vcenter table-hover card-table mb-0">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Assigned As</th>
+                <th class="text-center" style="width:120px;">
+                  Assign in Role<br>
+                  <input type="checkbox" class="form-check-input mt-1" id="roleUsersSelectAll">
+                </th>
+              </tr>
+            </thead>
+            <tbody id="roleUsersBody"></tbody>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost-secondary me-auto" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" id="roleUsersBtn" onclick="submitRoleUsers()">
+            <i class="ti ti-users me-1"></i>Update Assigned Users
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>

@@ -1,0 +1,135 @@
+{% extends 'base.django' %}
+{% load static %}
+{% block content %}
+    <div class="page-wrapper">
+      <div class="container-xl mt-5">
+        <div class="d-flex align-items-center justify-content-between" style="margin-bottom:.35rem;">
+          <h2 class="mb-0">Settings</h2>
+        </div>
+        <ol class="breadcrumb text-secondary" style="margin:0 0 1rem 0;">
+          <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+          <li class="breadcrumb-item active">Recompute Log</li>
+        </ol>
+
+        <div class="card">
+          <div class="card-header">
+              <div class="row w-full">
+                <div class="col">
+                  <h3 class="card-title mb-0">Schedule Recompute Log</h3>
+                  <p class="text-secondary m-0" style="font-size:13px;">Audit trail of all schedule recomputation events.</p>
+                </div>
+              </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-vcenter table-bordered">
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Old Schedule</th>
+                  <th>New Schedule</th>
+                  <th>Scope</th>
+                  <th>Recomputed By</th>
+                  <th>Recomputed At</th>
+                  <th>Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for event in events %}
+                <tr>
+                  <td>
+                    <div class="fw-semibold">{{ event.employee.last_name }}, {{ event.employee.first_name }}</div>
+                    <div class="text-secondary" style="font-size:12px;">{{ event.employee.department }}</div>
+                  </td>
+                  <td>{{ event.old_schedule.name|default:"—" }}</td>
+                  <td>{{ event.new_schedule.name|default:"—" }}</td>
+                  <td><span class="badge bg-blue-lt text-blue">{{ event.scope_description }}</span></td>
+                  <td>{{ event.recomputed_by.get_full_name|default:"—" }}</td>
+                  <td>{{ event.recomputed_at|date:"Y-m-d H:i" }}</td>
+                  <td>
+                    <button class="btn btn-sm btn-ghost-secondary btn-show-recompute-detail"
+                            data-event-id="{{ event.id }}">
+                      View ({{ event.details.count }})
+                    </button>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-center text-secondary py-4">No recompute events yet.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Detail Modal ──────────────────────────────────────────────── -->
+      <div class="modal modal-blur fade" id="recomputeDetailModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Recompute Detail</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+              <table class="table table-sm table-vcenter mb-0">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Before Time In</th>
+                    <th>Before Time Out</th>
+                    <th>Before Credited Hrs</th>
+                    <th>After Time In</th>
+                    <th>After Time Out</th>
+                    <th>After Credited Hrs</th>
+                  </tr>
+                </thead>
+                <tbody id="recompute-detail-tbody"></tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-ghost-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const _recomputeDetails = {
+        {% for event in events %}
+        "{{ event.id }}": [
+          {% for d in event.details.all %}
+          {
+            date:       "{{ d.date }}",
+            b_ti:       "{{ d.before_time_in|date:'H:i'|default:'—' }}",
+            b_to:       "{{ d.before_time_out|date:'H:i'|default:'—' }}",
+            b_cred:     "{{ d.before_credited_hrs }}",
+            a_ti:       "{{ d.after_time_in|date:'H:i'|default:'—' }}",
+            a_to:       "{{ d.after_time_out|date:'H:i'|default:'—' }}",
+            a_cred:     "{{ d.after_credited_hrs }}",
+          },
+          {% endfor %}
+        ],
+        {% endfor %}
+      }
+
+      document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.btn-show-recompute-detail')
+        if (!btn) return
+        const details = _recomputeDetails[btn.dataset.eventId] || []
+        const tbody   = document.getElementById('recompute-detail-tbody')
+        tbody.innerHTML = details.length === 0
+          ? '<tr><td colspan="7" class="text-center text-secondary py-3">No detail records.</td></tr>'
+          : details.map(d => `
+              <tr>
+                <td>${d.date}</td>
+                <td>${d.b_ti}</td>
+                <td>${d.b_to}</td>
+                <td class="${parseFloat(d.b_cred) !== parseFloat(d.a_cred) ? 'text-danger' : ''}">${d.b_cred}</td>
+                <td>${d.a_ti}</td>
+                <td>${d.a_to}</td>
+                <td class="${parseFloat(d.b_cred) !== parseFloat(d.a_cred) ? 'text-success' : ''}">${d.a_cred}</td>
+              </tr>`).join('')
+        tabler.Modal.getOrCreateInstance(document.getElementById('recomputeDetailModal')).show()
+      })
+    </script>
+{% endblock %}

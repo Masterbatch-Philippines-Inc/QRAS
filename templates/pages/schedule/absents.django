@@ -1,0 +1,297 @@
+{% extends 'base.django' %}
+{% load static %}
+{% block content %}
+    <div class="page-wrapper" id="parent-abs-loader">
+      <div id="abs-loader" class="d-flex position-relative w-100 align-items-center justify-content-center bg-surface" style="z-index:9999; min-height:100vh;">
+        <div class="text-center">
+          <div class="mb-3">
+          </div>
+          <div class="mb-3">
+            <img src="{% static 'img/loader-cat.svg' %}" height="80" alt="" style="position:relative; right:15px;">
+          </div>
+          <div class="text-secondary mb-3">Loading absence records…</div>
+          <div class="progress progress-sm" style="width:220px; margin:0 auto;">
+            <div class="progress-bar progress-bar-indeterminate"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="page-wrapper" id="abs-main-content" style="display:none!important;">
+      <style>
+        .ts-wrapper.single .ts-control,
+        .daterangepicker-input,
+        input.form-control {
+          height: 38px;
+          min-height: 38px;
+          padding: 6px 12px;
+          font-size: 14px;
+          line-height: 1.5;
+          border-radius: 6px;
+          box-sizing: border-box;
+        }
+
+        .ts-wrapper.single .ts-control {
+          display: flex;
+          align-items: center;
+        }
+        .ts-wrapper.single .ts-control {
+          height: 36px;
+          min-height: 34px;
+          padding: 2px 10px;
+          display: flex;
+          align-items: center;
+        }
+      </style>
+      {% if dept_warning %}
+      <div class="container-xl mt-4">
+        <div class="alert alert-warning d-flex gap-2 align-items-center">
+          <i class="ti ti-alert-triangle flex-shrink-0"></i>
+          Your account is not assigned to a department. Contact your administrator to get access.
+        </div>
+      </div>
+      {% endif %}
+      {% if has_query and start_date and end_date %}
+      <div class="container-xl mt-5" data-bs-toggle="tooltip" data-bs-placement="top" title="Results are shown for the full selected range. For large ranges the page may take a moment to load. If you selected more than one month, consider narrowing the range for faster results.">
+      {% else %}
+      <div class="container-xl mt-5">
+      {% endif %}
+        <div class="d-flex align-items-center justify-content-between" style="margin-bottom:.35rem;">
+          <h2 class="mb-0">Management</h2>
+          <button id="absences-btn-help-tour" class="btn btn-sm btn-ghost-secondary" title="Employee Records page tour">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            &nbsp;Need Help
+          </button>
+        </div>
+        <ol class="breadcrumb text-secondary" style="margin: 0 0 1rem 0;">
+          <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+          <li class="breadcrumb-item active">Absence Records</li>
+        </ol>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="row w-100 align-items-start g-2">
+              <div class="col">
+                <h3 class="card-title mb-0">Absent Employees</h3>
+                <p class="text-secondary m-0">
+                  {% if has_query and absent_list %}
+                    {% if selected_employee %}
+                      Showing absences for <strong>{{ selected_employee.last_name }}, {{ selected_employee.first_name }}</strong>
+                      {% if start_date %} from <strong>{{ start_date|date:"N j, Y" }}</strong> to <strong>{{ end_date|date:"N j, Y" }}</strong>{% endif %}
+                      — {{ absent_list|length }} record{{ absent_list|length|pluralize }}.
+                    {% else %}
+                      Showing absences from <strong>{{ start_date|date:"N j, Y" }}</strong> to <strong>{{ end_date|date:"N j, Y" }}</strong>
+                      — {{ absent_list|length }} record{{ absent_list|length|pluralize }}.
+                    {% endif %}
+                  {% elif has_query %}
+                    No absences found for the selected filters.
+                  {% else %}
+                    Use the filters to view absences.
+                  {% endif %}
+                </p>
+              </div>
+              <div class="col-md-auto">
+                <form method="GET" id="abs-filter-form" class="d-flex flex-wrap gap-2 align-items-center">
+
+                  {# Employee dropdown #}
+                  <div>
+                    <select id="abs-emp-select" name="employee_id" class="form-select" style="min-width:200px;">
+                      <option value="">— All employees —</option>
+                      {% for emp in employees %}
+                        <option value="{{ emp.employee_id }}"
+                          {% if selected_employee and selected_employee.employee_id == emp.employee_id %}selected{% endif %}>
+                          {{ emp.last_name }}, {{ emp.first_name }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                    <script>new TomSelect('#abs-emp-select', { create: false, maxItems: 1 });</script>
+                  </div>
+                  
+                  <div class="col-auto">
+                    <input type="hidden" name="start_date" id="abs-start-date" value="{{ start_date|date:'Y-m-d' }}">
+                    <input type="hidden" name="end_date"   id="abs-end-date"   value="{{ end_date|date:'Y-m-d' }}">
+                    <div class="input-group input-group-flat">
+                      <span class="input-group-text">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                          fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+                          <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                      </span>
+                      <input type="text" id="abs-daterangepicker" class="form-control form-control-sm" style="width:220px;"
+                            placeholder="MM/DD/YYYY — MM/DD/YYYY" autocomplete="off" value="" readonly />
+                    </div>
+                  </div>
+
+                  <div class="d-flex gap-2 align-items-end">
+                    <button type="submit" class="btn btn-primary" id="abs-view-btn">View</button>
+                    {% if has_query %}
+                    <a href="{% url 'absence-record' %}" class="btn btn-ghost-secondary">Clear</a>
+                    {% endif %}
+                  </div>
+
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-vcenter table-bordered" id="absence-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Employee</th>
+                  <th>Department</th>
+                  <th>Position</th>
+                  <th>Schedule</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% if not has_query %}
+                <tr class="tc-django-empty" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Please be informed that unfiltered query will take time to load.">
+                  <td colspan="6" class="text-center text-secondary py-4">
+                    Select filters above to load the report.
+                  </td>
+                </tr>
+                {% elif absent_list %}
+                  {% for item in absent_list %}
+                  <tr class="abs-row">
+                    <td class="text-nowrap">{{ item.date|date:"M d, Y" }}</td>
+                    <td>
+                      <div class="fw-semibold">{{ item.employee.last_name }}, {{ item.employee.first_name }}</div>
+                      <div class="text-secondary" style="font-size:12px;">{{ item.employee.employee_id }}</div>
+                    </td>
+                    <td>{{ item.employee.department }}</td>
+                    <td>{{ item.employee.position }}</td>
+                    <td>{{ item.schedule.name }}</td>
+                    <td>
+                      {% if item.is_excused %}
+                        <span class="badge bg-teal-lt text-teal">
+                          Excused — {{ item.leave_type }}
+                        </span>
+                      {% else %}
+                        <span class="badge bg-red-lt text-red">Absent</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                {% else %}
+                <tr>
+                  <td colspan="6" class="text-center text-secondary py-4">
+                    No absences found for the selected filters.
+                  </td>
+                </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="card-footer d-flex align-items-center">
+            <div class="dropdown clzst">
+              <a class="btn dropdown-toggle" data-bs-toggle="dropdown">
+                <span id="abs-page-count" class="me-1">8</span> records
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" onclick="setAbsPageSize(8)">8 records</a>
+                <a class="dropdown-item" onclick="setAbsPageSize(20)">20 records</a>
+                <a class="dropdown-item" onclick="setAbsPageSize(50)">50 records</a>
+              </div>
+            </div>
+            <ul class="pagination m-0 ms-auto" id="abs-pagination"></ul>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ── Daterangepicker ──────────────────────────────────────────
+      $(function () {
+        const today       = moment();
+        const monthStart  = moment().startOf('month');
+
+        const rawStart = document.getElementById('abs-start-date').value;
+        const rawEnd   = document.getElementById('abs-end-date').value;
+
+        // Parse whatever format Django sends, fallback to current month default
+        const startMoment = rawStart ? moment(rawStart, ['YYYY-MM-DD', 'MMMM DD, YYYY', 'MMM DD, YYYY']) : monthStart;
+        const endMoment   = rawEnd   ? moment(rawEnd,   ['YYYY-MM-DD', 'MMMM DD, YYYY', 'MMM DD, YYYY']) : today;
+
+        // Normalize hidden fields to YYYY-MM-DD for the backend
+        document.getElementById('abs-start-date').value = startMoment.format('YYYY-MM-DD');
+        document.getElementById('abs-end-date').value   = endMoment.format('YYYY-MM-DD');
+
+        // Set visible input display on load
+        $('#abs-daterangepicker').val(
+          startMoment.format('MMM D, YYYY') + ' — ' + endMoment.format('MMM D, YYYY')
+        );
+
+        $('#abs-daterangepicker').daterangepicker({
+          autoUpdateInput: false,
+          startDate: startMoment,
+          endDate:   endMoment,
+          maxDate:   today,
+          locale:    { cancelLabel: 'Clear' },
+        });
+
+        $('#abs-daterangepicker').on('apply.daterangepicker', function (ev, picker) {
+          $(this).val(
+            picker.startDate.format('MMM D, YYYY') + ' — ' + picker.endDate.format('MMM D, YYYY')
+          );
+          document.getElementById('abs-start-date').value = picker.startDate.format('YYYY-MM-DD');
+          document.getElementById('abs-end-date').value   = picker.endDate.format('YYYY-MM-DD');
+        });
+
+        $('#abs-daterangepicker').on('cancel.daterangepicker', function () {
+          $(this).val('');
+          document.getElementById('abs-start-date').value = '';
+          document.getElementById('abs-end-date').value   = '';
+        });
+      });
+    </script>
+    <script>
+      initTableController({
+        searchId:    null,
+        pageCountId: 'abs-page-count',
+        paginId:     'abs-pagination',
+        rowSelector: '.abs-row',
+        defaultSize: 8,
+        setFnName:   'setAbsPageSize',
+      });
+    </script>
+    <script src="{% static 'js/tours/schedules/absences.js' %}"></script>
+    <script>
+      function showAbsLoader() {
+        document.getElementById('parent-abs-loader').style.display = '';
+        document.getElementById('abs-main-content').style.setProperty('display', 'none', 'important');
+        document.body.classList.add('overflow-hidden');
+      }
+
+      function hideAbsLoader() {
+        document.getElementById('parent-abs-loader').style.setProperty('display', 'none', 'important');
+        document.getElementById('abs-main-content').style.removeProperty('display');
+        document.body.classList.remove('overflow-hidden');
+      }
+
+      window.addEventListener('load', hideAbsLoader);
+      setTimeout(hideAbsLoader, 15000);
+
+      document.getElementById('abs-view-btn').addEventListener('click', function (e) {
+        const start    = document.getElementById('abs-start-date').value;
+        const end      = document.getElementById('abs-end-date').value;
+        const employee = document.getElementById('abs-emp-select').value;
+        if (!start && !end && !employee) return;
+
+        if (!employee) {
+          e.preventDefault();
+          if (!confirm('No employee selected. This will load absences for all employees in the selected date range and may take a moment.\n\nContinue?')) return;
+        }
+
+        showAbsLoader();
+        document.getElementById('abs-filter-form').submit();
+      });
+    </script>
+{% endblock %}

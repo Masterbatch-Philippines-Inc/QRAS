@@ -1,0 +1,303 @@
+{% extends 'base.django' %}
+{% load static %}
+{% block content %}
+    {% if not already_verified %}<!-- Password verify modal -->
+    <div class="modal modal-blur fade show d-block" id="password-gate-modal" tabindex="-1" role="dialog" style="background:rgba(0,0,0,0.2);">
+      <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Confirm Identity</h5>
+          </div>
+          <div class="modal-body">
+            <p class="text-secondary mb-3">Enter your password to access Database Sync.</p>
+            <div id="gate-alert" class="mb-2"></div>
+            <div class="mb-3">
+              <label class="form-label required">Password</label>
+              <input type="password" id="gate-password" class="form-control" placeholder="Your password" />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <a href="/" class="btn btn-ghost-secondary me-auto">Cancel</a>
+            <button id="gate-btn" class="btn btn-primary" onclick="dbSyncdbSyncverifyPassword()">Confirm</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    <div class="page-wrapper" id="main-content" {% if not already_verified %}style="display:none;"{% endif %}>
+    <div class="page-wrapper">
+      <div class="container-xl mt-5">
+        <div class="d-flex align-items-center justify-content-between" style="margin-bottom:.35rem;">
+          <h2 class="mb-0">Settings</h2>
+        </div>
+        <ol class="breadcrumb text-secondary" aria-label="breadcrumbs" style="margin: 0 0 1rem 0;">
+          <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Database Sync</li>
+        </ol>
+
+        <div class="row">
+
+          <!-- ─── Database Sync ─── -->
+            <div class="row row-cards mt-0">
+              <!-- Left: controls -->
+              <div class="col-md-6 col-lg-4 mt-0 sticky-top" style="top:2rem;z-index:5;">
+                <div class="card card-md mb-3">
+                  <div class="card-header">
+                    <div class="col">
+                      <h3 class="card-title mb-0">Auto Sync Kill Switch</h3>
+                      <p class="text-secondary m-0">Background sync that runs automatically.</p>
+                    </div>
+                  </div>
+                  <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                      <span class="text-secondary">Status</span>
+                      <span id="auto-sync-pill" class="badge {% if auto_sync_enabled %}bg-primary{% else %}bg-danger{% endif %}-lt">
+                        {% if auto_sync_enabled %}ON{% else %}OFF{% endif %}
+                      </span>
+                    </div>
+                    <button id="auto-sync-toggle-btn" class="btn {% if auto_sync_enabled %}btn-outline-danger{% else %}btn-outline-primary{% endif %} w-100" onclick="toggleAutoSync()">
+                      {% if auto_sync_enabled %}Turn Off{% else %}Turn On{% endif %}
+                    </button>
+                    <div class="alert alert-info mt-3 small" role="alert">
+                      <div class="d-flex">
+                        <div>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon me-1">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                            <path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"></path>
+                            <path d="M12 9v4"></path>
+                            <path d="M12 16v.01"></path>
+                          </svg>
+                        </div>
+                        <div>
+                          This does not affect the manual sync button below — you can still force a sync anytime.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="card card-md">
+                  <div class="card-header">
+                    <div class="col">
+                      <h3 class="card-title mb-0">Manual Sync Force Switch</h3>
+                      <p class="text-secondary m-0">Synchronize local database records to the remote server.</p>
+                    </div>
+                  </div>
+                  <div class="card-body">
+                    <p class="text-secondary mb-4">Click the button below to push new local records to the remote server. This process may take a few moments depending on data size.</p>
+                    <button id="sync-btn" class="btn btn-primary w-100" onclick="startSync()">
+                      Sync to Server
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <!-- Right: terminal output -->
+              <div class="col-md-6 col-lg-8 mt-0">
+                <div class="card card-md h-100">
+                  <div class="card-header">
+                    <div class="col">
+                      <h3 class="card-title mb-0">Sync Output</h3>
+                      <p class="text-secondary m-0">Real-time log of the sync process.</p>
+                    </div>
+                  </div>
+                  <div class="card-body p-0">
+                    <div id="sync-terminal-placeholder" class="d-flex align-items-center justify-content-center text-secondary py-5">
+                      <span>No sync has been run yet.</span>
+                    </div>
+                    <div id="sync-terminal" class="d-none bg-dark rounded p-3 font-monospace small lh-lg overflow-auto m-4" style="max-height:420px;">
+                      <div id="terminal-lines"></div>
+                      <span id="terminal-cursor" class="d-inline-block bg-success align-middle terminal-cursor"></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+        </div>
+      </div>
+    </div>
+    <style>
+      @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+      .terminal-cursor { width:8px; height:14px; animation: blink 1s step-end infinite; }
+      #password-gate-modal { z-index: 1060; }
+    </style>
+    <script>
+      let _pollInterval  = null;
+      let _countdownTimer = null;
+
+      function dbSyncdbSyncverifyPassword() {
+        const btn      = document.getElementById('gate-btn');
+        const input    = document.getElementById('gate-password');
+        const alertBox = document.getElementById('gate-alert');
+
+        btn.disabled  = true;
+        btn.innerHTML = 'Verifying...';
+        alertBox.innerHTML = '';
+
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        formData.append('password', input.value);
+
+        fetch("{% url 'verify-sync-password' %}", { method: 'POST', body: formData })
+          .then(r => r.json())
+          .then(data => {
+            if (data.status === 'ok') {
+              document.getElementById('password-gate-modal').remove();
+              document.getElementById('main-content').style.display = '';
+            } else if (data.status === 'locked') {
+              startCountdown(data.remaining, btn, alertBox);
+            } else {
+              alertBox.innerHTML = `<div class="alert alert-danger py-2">Incorrect password. ${data.attempts_left} attempt(s) remaining.</div>`;
+              input.value   = '';
+              btn.disabled  = false;
+              btn.innerHTML = 'Confirm';
+            }
+          })
+          .catch(() => {
+            alertBox.innerHTML = '<div class="alert alert-danger py-2">Network error. Please try again.</div>';
+            btn.disabled  = false;
+            btn.innerHTML = 'Confirm';
+          });
+      }
+
+      function startCountdown(seconds, btn, alertBox) {
+        let remaining = seconds;
+        btn.disabled  = true;
+
+        function tick() {
+          const m = Math.floor(remaining / 60);
+          const s = String(remaining % 60).padStart(2, '0');
+          alertBox.innerHTML = `<div class="alert alert-warning py-2">Too many failed attempts. Try again in ${m}:${s}.</div>`;
+          if (remaining <= 0) {
+            clearInterval(_countdownTimer);
+            btn.disabled  = false;
+            btn.innerHTML = 'Confirm';
+            alertBox.innerHTML = '<div class="alert alert-info py-2">You may try again now.</div>';
+            return;
+          }
+          remaining--;
+        }
+        tick();
+        _countdownTimer = setInterval(tick, 1000);
+      }
+
+      // Allow Enter key to submit password
+      document.getElementById('gate-password').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') dbSyncdbSyncverifyPassword();
+      });
+
+      function lineColor(text) {
+        if (text.startsWith('[SUCCESS]')) return '#00ff99';
+        if (text.startsWith('[WARNING]')) return '#f0a500';
+        if (text.startsWith('[ERROR]'))   return '#ff5f5f';
+        return '#c9d1d9';
+      }
+
+      function appendLine(text) {
+        const container = document.getElementById('terminal-lines');
+        const line = document.createElement('div');
+        line.textContent = text;
+        line.style.color = lineColor(text);
+        container.appendChild(line);
+        document.getElementById('sync-terminal').scrollTop = 99999;
+      }
+
+      function stopPolling(btn, cursor) {
+        clearInterval(_pollInterval);
+        _pollInterval     = null;
+        cursor.classList.add('d-none');
+        btn.disabled      = false;
+        btn.innerHTML     = 'Sync to Server';
+      }
+
+      function pollStatus(jobId, cursor, btn, cursorEl) {
+        _pollInterval = setInterval(() => {
+          fetch(`{% url 'sync-status' %}?job_id=${jobId}&cursor=${cursor}`)
+            .then(r => r.json())
+            .then(data => {
+              if (data.status !== 'ok') {
+                appendLine('[ERROR] ' + (data.error || 'Unknown error.'));
+                stopPolling(btn, cursorEl);
+                return;
+              }
+              data.lines.forEach(line => appendLine(line));
+              cursor = data.cursor;
+              if (data.done) stopPolling(btn, cursorEl);
+            })
+            .catch(() => {
+              appendLine('[ERROR] Network error while polling.');
+              stopPolling(btn, cursorEl);
+            });
+        }, 1000);
+      }
+
+      function toggleAutoSync() {
+        const btn  = document.getElementById('auto-sync-toggle-btn');
+        const pill = document.getElementById('auto-sync-pill');
+
+        btn.disabled = true;
+
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        fetch("{% url 'toggle-auto-sync' %}", { method: 'POST', body: formData })
+          .then(r => r.json())
+          .then(data => {
+            if (data.status !== 'ok') {
+              showToast('Failed to update auto sync setting.', 'danger');
+              btn.disabled = false;
+              return;
+            }
+            if (data.auto_sync_enabled) {
+              pill.textContent = 'ON';
+              pill.className = 'badge bg-primary-lt';
+              btn.textContent = 'Turn Off';
+              btn.className = 'btn btn-outline-danger w-100';
+              showToast('Auto sync turned on.', 'info');
+            } else {
+              pill.textContent = 'OFF';
+              pill.className = 'badge bg-danger-lt';
+              btn.textContent = 'Turn On';
+              btn.className = 'btn btn-outline-primary w-100';
+              showToast('Auto sync turned off.', 'info');
+            }
+            btn.disabled = false;
+          })
+          .catch(() => {
+            showToast('Network error while updating auto sync.', 'danger');
+            btn.disabled = false;
+          });
+      }
+
+      function startSync() {
+        const btn      = document.getElementById('sync-btn');
+        const terminal = document.getElementById('sync-terminal');
+        const lines    = document.getElementById('terminal-lines');
+        const cursorEl = document.getElementById('terminal-cursor');
+
+        btn.disabled           = true;
+        btn.innerHTML          = 'Syncing... Please wait.';
+        lines.innerHTML        = '';
+        document.getElementById('sync-terminal-placeholder').classList.add('d-none');
+        terminal.classList.remove('d-none');
+        cursorEl.classList.remove('d-none');
+
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        fetch("{% url 'manual-sync' %}", { method: 'POST', body: formData })
+          .then(r => r.json())
+          .then(data => {
+            if (data.status !== 'ok') {
+              appendLine('[ERROR] Failed to start sync.');
+              stopPolling(btn, cursorEl);
+              return;
+            }
+            pollStatus(data.job_id, 0, btn, cursorEl);
+          })
+          .catch(() => {
+            appendLine('[ERROR] Network or server error occurred.');
+            stopPolling(btn, cursorEl);
+          });
+      }
+    </script>
+{% endblock %}

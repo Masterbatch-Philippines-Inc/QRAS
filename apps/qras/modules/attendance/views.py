@@ -42,7 +42,7 @@ class AttendanceRecordView(LoginRequiredMixin, View):
     def get(self, request):
         dept_filter = get_dept_queryset_filter(request, dept_field_path='employee__department')
         if dept_filter is None:
-            return render(request, 'attendance/attendance-records.html', {'dept_warning': True})
+            return render(request, 'pages/attendance/logs.django', {'dept_warning': True})
 
         self_exclude = get_self_exclude(request)
 
@@ -134,7 +134,7 @@ class AttendanceRecordView(LoginRequiredMixin, View):
             x['employee'].first_name.lower()
         ))
 
-        return render(request, 'attendance/attendance-records.html', {'records': records})
+        return render(request, 'pages/attendance/logs.django', {'records': records})
 
 
 @method_decorator([permission_required('attendance', 'read')], name='dispatch')
@@ -217,7 +217,7 @@ class ManualAttendanceView(LoginRequiredMixin, View):
             is_active=True, is_resigned=False
         ).values('employee_id', 'first_name', 'last_name'
         ).order_by('last_name', 'first_name')
-        return render(request, 'attendance/manual-attendance.html', {
+        return render(request, 'pages/attendance/manual_entry.django', {
             'employees': employees,
         })
 
@@ -326,7 +326,7 @@ class RestDayManagementView(LoginRequiredMixin, View):
     def get(self, request):
         dept_filter  = get_dept_queryset_filter(request, dept_field_path='department')
         if dept_filter is None:
-            return render(request, 'attendance/rest-days.html', {'dept_warning': True, 'employees': []})
+            return render(request, 'pages/attendance/rest_days.django', {'dept_warning': True, 'employees': []})
 
         self_exclude = get_self_exclude(request)
         employees    = Employee.objects.filter(
@@ -335,7 +335,7 @@ class RestDayManagementView(LoginRequiredMixin, View):
         if self_exclude:
             employees = employees.exclude(pk=self_exclude)
         employees = employees.order_by('last_name', 'first_name')
-        return render(request, 'attendance/rest-days.html', {'employees': employees})
+        return render(request, 'pages/attendance/rest_days.django', {'employees': employees})
 
 
 @method_decorator([permission_required('approvals_missing_logs', 'read')], name='dispatch')
@@ -344,7 +344,7 @@ class MissingLogView(LoginRequiredMixin, View):
     def get(self, request):
         dept_filter = get_dept_queryset_filter(request, dept_field_path='employee__department')
         if dept_filter is None:
-            return render(request, 'requests/missing_logs/ml-approval.html', {'dept_warning': True})
+            return render(request, 'pages/request/missing_logs.django', {'dept_warning': True})
 
         missing_logs = list(
             MissingLog.objects
@@ -353,7 +353,7 @@ class MissingLogView(LoginRequiredMixin, View):
             .order_by('date', 'employee__last_name')
         )
 
-        return render(request, 'requests/missing_logs/ml-approval.html', {
+        return render(request, 'pages/request/missing_logs.django', {
             'missing_logs': missing_logs,
         })
 

@@ -1,0 +1,98 @@
+{% load static %}
+  <!-- ══════════════════════════════════════════════════════════════
+      MODAL — Add System User
+  ═══════════════════════════════════════════════════════════════ -->
+  <div class="modal modal-blur fade" id="addUserModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+
+        <div class="modal-header">
+          <div class="d-flex align-items-center gap-2">
+            <i class="ti ti-info-circle text-primary fs-4"></i>
+            <h5 class="modal-title mb-0">Creating a new user account</h5>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+
+          <div class="alert alert-info mb-4">
+            <div class="d-flex gap-2 align-items-start">
+              <i class="ti ti-info-circle mt-1 flex-shrink-0"></i>
+              <div>
+                <strong>Important Reminder!</strong><br>
+                Creating a new user is only dedicated to the MBPI QR Attendance System.
+                Only Administrators have access to manage system users and grant permissions.
+              </div>
+            </div>
+          </div>
+
+          <div id="addUserError" class="alert alert-danger d-none mb-3" role="alert"></div>
+          <div id="addUserSuccess" class="alert alert-success d-none mb-3" role="alert"></div>
+
+          <div class="mb-3">
+            <label class="form-label required">System User Lastname</label>
+            <input type="text" class="form-control" id="addLastName" placeholder="Enter last name" autocomplete="off">
+          </div>
+          <div class="mb-3">
+            <label class="form-label required">System User Firstname</label>
+            <input type="text" class="form-control" id="addFirstName" placeholder="Enter first name" autocomplete="off">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">System Role</label>
+            <select class="form-select" id="addRole" onchange="toggleAddDeptField()">
+              <option value="">— Select role —</option>
+              {% for role in role_choices %}
+                <option value="{{ role.id }}" data-name="{{ role.name }}">
+                  {{ role.name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3 d-none" id="addDeptWrapper">
+            <label class="form-label required">Department</label>
+            <select class="form-select" id="addDepartment">
+              <option value="">— Select department —</option>
+              {% for dept in department_choices %}
+                <option value="{{ dept.id }}">{{ dept.name }}</option>
+              {% endfor %}
+            </select>
+            <div class="form-hint">Required for Department Head role.</div>
+            <script>
+              function toggleAddDeptField() {
+                const select   = document.getElementById('addRole');
+                const selected = select.options[select.selectedIndex];
+                const isDeptHead = selected.dataset.name === 'Department Head';
+                document.getElementById('addDeptWrapper').classList.toggle('d-none', !isDeptHead);
+                if (!isDeptHead) document.getElementById('addDepartment').value = '';
+              }
+            </script>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Linked Employee</label>
+            <select class="form-select" id="addEmployee">
+              <option value="">— None —</option>
+              {% for emp in employee_choices %}
+                <option value="{{ emp.id }}">{{ emp.last_name }}, {{ emp.first_name }}</option>
+              {% endfor %}
+            </select>
+            <div class="form-hint">Link this user to their employee record.</div>
+          </div>
+          <div class="mb-0">
+            <label class="form-label required">Email</label>
+            <input type="email" class="form-control" id="addEmail" placeholder="Enter an email address" autocomplete="off">
+            <div class="form-hint">A generated password will be sent to this address.</div>
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost-secondary me-auto" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" id="addUserBtn" onclick="submitCreateUser()">
+            <i class="ti ti-device-floppy me-1"></i>Save changes
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>

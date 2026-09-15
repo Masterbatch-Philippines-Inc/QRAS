@@ -1,0 +1,42 @@
+{% load static %}
+  <!-- ══════════════════════════════════════════════════════════════
+      MODAL — Check Pass
+  ═══════════════════════════════════════════════════════════════ -->
+  <div class="modal modal-blur fade" id="adminEditConfirmModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Confirm Administrator Edit</h5>
+          <button type="button" class="btn-close" onclick="closeAdminConfirmModal()"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-secondary mb-3">
+            You are about to edit the <strong>Administrator</strong> role. Enter your password to continue.
+          </p>
+          <div id="adminEditConfirmError" class="alert alert-danger d-none"></div>
+          <div class="mb-0">
+            <label class="form-label required">Your Password</label>
+            <input id="adminEditConfirmPassword"
+                  type="password"
+                  class="form-control"
+                  autocomplete="new-password"
+                  onpaste="false;" 
+                  oncut="false;" 
+                  oncopy="false;"
+                  autocorrect="off"
+                  autocapitalize="off"
+                  spellcheck="false"
+                  data-lpignore="true"
+                  data-form-type="other"
+                  placeholder="Enter your password" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost-secondary me-auto" onclick="closeAdminConfirmModal()">Cancel</button>
+          <button type="button" class="btn btn-primary" id="adminEditConfirmBtn" onclick="submitAdminEditConfirm()">
+            Confirm &amp; Edit
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>

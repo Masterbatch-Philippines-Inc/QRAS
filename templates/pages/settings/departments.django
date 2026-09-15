@@ -1,0 +1,261 @@
+{% extends 'base.django' %}
+{% load static %}
+{% block content %}
+    <div class="page-wrapper">
+      <div class="container-xl mt-5">
+        <div class="d-flex align-items-center justify-content-between" style="margin-bottom:.35rem;">
+          <h2 class="mb-0">Settings</h2>
+          <button id="tours-dept-help-btn" class="btn btn-sm btn-ghost-secondary" title="Employee Records page tour">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            &nbsp;Need Help
+          </button>
+        </div>
+        <ol class="breadcrumb text-secondary" aria-label="breadcrumbs" style="margin: 0 0 1rem 0;">
+          <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+          <li class="breadcrumb-item active" aria-current="page">
+            Departments
+          </li>
+        </ol>
+        <!-- Filters -->
+        <div class="card">
+          <div class="card-table">
+            <div class="card-header">
+              <div class="row w-full align-items-center">
+                <!-- Left side -->
+                <div class="col">
+                  <h3 class="card-title mb-0">Department Records</h3>
+                  <p class="text-secondary m-0">Description for department records.</p>
+                </div>
+                <!-- Right side -->
+                <div class="col-md-auto col-sm-12">
+                  <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <!-- SEARCH -->
+                    <div class="input-group input-group-flat w-auto">
+                      <span class="input-group-text">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                          fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/>
+                        </svg>
+                      </span>
+                      <input id="dept-search" type="text" class="form-control" autocomplete="off" placeholder="Search…" />
+                    </div>
+                    <!-- FORM -->
+                    <form method="GET" class="d-flex gap-2 align-items-center mb-0">
+                      <label class="form-check form-switch mb-0"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="top"
+                            title="Toggle to include inactive departments">
+                        <input class="form-check-input" type="checkbox" name="show_inactive" value="true"
+                          {% if show_inactive %}checked{% endif %}
+                          onchange="this.form.submit()">
+                      </label>
+                    </form>
+
+                    <!-- BUTTON (outside form, same row) -->
+                    <button class="btn btn-primary"
+                            data-bs-toggle="modal"
+                            data-bs-target="#modalCreateDept">
+                      New Department
+                    </button>
+
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-vcenter table-hover card-table" id="tour-dept-rec">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Code</th>
+                  <th>Employees</th>
+                  {% if show_inactive %}<th>Status</th>{% endif %}
+                  <th class="w-1" id="tours-dept-rec-actions">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for dept in departments %}
+                <tr class="dept-row">
+                  <td class="fw-medium">{{ dept.name }}</td>
+                  <td><span class="badge bg-blue-lt">{{ dept.code }}</span></td>
+                  <td>
+                    {% if dept.employee_count > 0 %}
+                    <a href="#" class="text-primary"
+                       data-bs-toggle="modal"
+                       data-bs-target="#employeesListModal"
+                       onclick="loadEmployeesList(
+                         '{% url 'department-employees' dept.id %}',
+                         '{{ dept.name }} — Employees',
+                         'Position'
+                       )">
+                      {{ dept.employee_count }}
+                    </a>
+                    {% else %}
+                    <span class="text-secondary">0</span>
+                    {% endif %}
+                  </td>
+                  {% if show_inactive %}
+                  <td>
+                    {% if dept.is_active %}
+                      <span class="badge bg-green-lt">Active</span>
+                    {% else %}
+                      <span class="badge bg-red-lt">Inactive</span>
+                    {% endif %}
+                  </td>
+                  {% endif %}
+                  <td>
+                    <div class="d-flex gap-2">
+                      <button class="btn btn-sm btn-ghost-danger btn-toggle-dept"
+                              data-id="{{ dept.id }}" data-name="{{ dept.name }}"
+                              data-active="{% if dept.is_active %}1{% else %}0{% endif %}">
+                          {% if dept.is_active %}Deactivate{% else %}Restore{% endif %}
+                      </button>
+                      <button class="btn btn-sm btn-primary btn-edit-dept" 
+                              data-id="{{ dept.id }}" 
+                              data-name="{{ dept.name }}" 
+                              data-code="{{ dept.code }}"
+                              data-bs-toggle="modal"
+                              data-bs-target="#modalEditDept">
+                          Edit
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr class="tc-django-empty">
+                  <td colspan="5" class="text-center text-secondary py-5">
+                    <i class="ti ti-building-off fs-1 d-block mb-2"></i>
+                    No departments found.
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="card-footer d-flex align-items-center">
+            <div class="dropdown clzst">
+              <a class="btn dropdown-toggle" data-bs-toggle="dropdown">
+                <span id="dept-page-count" class="me-1">8</span> records
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" onclick="setPageSize(8)">8 records</a>
+                <a class="dropdown-item" onclick="setPageSize(20)">20 records</a>
+                <a class="dropdown-item" onclick="setPageSize(50)">50 records</a>
+              </div>
+            </div>
+            <ul class="pagination m-0 ms-auto" id="dept-pagination"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <script>
+      const csrfToken = '{{ csrf_token }}';
+    
+      function showErrors(containerId, errors) {
+        const el = document.getElementById(containerId);
+        el.innerHTML = Object.values(errors).map(e => `<div>${e}</div>`).join('');
+        el.classList.remove('d-none');
+      }
+    
+      function hideErrors(containerId) {
+        const el = document.getElementById(containerId);
+        el.innerHTML = '';
+        el.classList.add('d-none');
+      }
+    
+      // CREATE
+      document.getElementById('btnCreateDept').addEventListener('click', async () => {
+        hideErrors('createErrors');
+        const body = new FormData();
+        body.append('name', document.getElementById('createName').value);
+        body.append('code', document.getElementById('createCode').value);
+    
+        const res = await fetch('{% url "department-create" %}', {
+          method: 'POST', headers: {'X-CSRFToken': csrfToken}, body
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Action done.','success');
+          setTimeout(() => {
+            location.reload();
+          }, 2500);
+        }
+        else { showErrors('createErrors', data.errors); }
+      });
+    
+      // EDIT — open
+      document.querySelectorAll('.btn-edit-dept').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.getElementById('editDeptId').value = btn.dataset.id;
+          document.getElementById('editName').value = btn.dataset.name;
+          document.getElementById('editCode').value = btn.dataset.code;
+          hideErrors('editErrors');
+        });
+      });
+    
+      // EDIT — save
+      document.getElementById('btnEditDept').addEventListener('click', async () => {
+        hideErrors('editErrors');
+        const id = document.getElementById('editDeptId').value;
+        const body = new FormData();
+        body.append('name', document.getElementById('editName').value);
+        body.append('code', document.getElementById('editCode').value);
+    
+        const urlTemplate = "{% url 'department-update' 0 %}";
+        const url = urlTemplate.replace('0', id);
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': csrfToken },
+          body
+        });
+        const data = await res.json();
+        if (data.success){
+          showToast('Action done.','success');
+          setTimeout(() => {
+            location.reload();
+          }, 2500);
+        } else {
+          showErrors('editErrors', data.errors);
+        }
+      });
+    
+      // SOFT DELETE / RESTORE
+      document.querySelectorAll('.btn-toggle-dept').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const label = btn.dataset.active === '1' ? 'deactivate' : 'restore';
+          if (!confirm(`Are you sure you want to ${label} "${btn.dataset.name}"?`)) return;
+          const urlTemplate = "{% url 'department-delete' 0 %}";
+          const url = urlTemplate.replace('0', btn.dataset.id);
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken }
+          });
+          const data = await res.json();
+          if (data.success) {
+            showToast('Action done.','success');
+            setTimeout(() => {
+              location.reload();
+            }, 2500);
+          }
+          showToast(data.message,'info');
+        });
+      });
+    
+    </script>
+    <script>
+      initTableController({
+        searchId:    'dept-search',
+        pageCountId: 'dept-page-count',
+        paginId:     'dept-pagination',
+        rowSelector: '.dept-row',
+        defaultSize: 8,
+        setFnName:   'setPageSize',
+      });
+    </script>
+    <script src="{% static 'js/tours/settings/departments.js' %}"></script>
+{% endblock %}

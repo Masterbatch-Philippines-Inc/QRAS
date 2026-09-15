@@ -1,0 +1,575 @@
+{% extends "base.django" %}
+{% load static %}
+{% block content %}
+    <div class="page-wrapper">
+      <div class="container-xl mt-5">
+        <h2>Employee Code</h2>
+        <ol class="breadcrumb text-secondary" aria-label="breadcrumbs" style="margin: 0 0 1rem 0;">
+          <li class="breadcrumb-item active" aria-current="page">&nbsp;</li>
+        </ol>
+        <div class="row row-cards align-items-start">
+    
+          <!-- LEFT: Numpad -->
+          <div class="col-lg-7">
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">
+                  Enter Employee ID
+                </h3>
+              </div>
+              <div class="card-body">
+    
+                <!-- Display -->
+                <div class="mb-3">
+                  <div class="input-group input-group-lg">
+                    <span class="input-group-text bg-dark text-white border-dark">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-id-badge-2">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                        <path d="M7 12h3v4h-3l0 -4" />
+                        <path d="M10 6h-6a1 1 0 0 0 -1 1v12a1 1 0 0 0 1 1h16a1 1 0 0 0 1 -1v-12a1 1 0 0 0 -1 -1h-6" />
+                        <path d="M10 4a1 1 0 0 1 1 -1h2a1 1 0 0 1 1 1v3a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1l0 -3" />
+                        <path d="M14 16h2" />
+                        <path d="M14 12h4" />
+                      </svg>
+                    </span>
+                    <input type="text"
+                          id="empCodeDisplay"
+                          class="form-control form-control-lg text-center fw-bold fs-2 border-dark"
+                          placeholder="_ _ _ _ _"
+                          readonly
+                          style="letter-spacing: 0.4rem;">
+                    <button class="btn btn-outline-secondary"
+                            id="btnBackspace"
+                            type="button"
+                            tabindex="-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-backspace">
+                              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                              <path d="M20 6a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-11l-5 -5a1.5 1.5 0 0 1 0 -2l5 -5l11 0" />
+                              <path d="M12 10l4 4m0 -4l-4 4" />
+                            </svg>
+                    </button>
+                  </div>
+                </div>
+    
+                <!-- Numpad grid -->
+                <div class="row g-2" id="numpad">
+                  {% for digit in "123456789" %}
+                  <div class="col-4">
+                    <button class="btn btn-outline-secondary w-100 numpad-btn"
+                            data-value="{{ digit }}"
+                            style="height: 8rem; font-size: 2rem; font-weight: 600;">
+                      {{ digit }}
+                    </button>
+                  </div>
+                  {% endfor %}
+    
+                  <!-- Bottom row: clear, 0, submit -->
+                  <div class="col-4">
+                    <button class="btn btn-outline-danger w-100"
+                            id="btnClear"
+                            style="height: 8rem; font-size: 1.25rem; font-weight: 600;">
+                      Clear
+                    </button>
+                  </div>
+                  <div class="col-4">
+                    <button class="btn btn-outline-secondary w-100 numpad-btn"
+                            data-value="0"
+                            style="height: 8rem; font-size: 2rem; font-weight: 600;">
+                      0
+                    </button>
+                  </div>
+                  <div class="col-4">
+                    <button class="btn btn-dark w-100"
+                            id="btnLookup"
+                            style="height: 8rem; font-size: 1.25rem; font-weight: 600;">
+                      Find
+                    </button>
+                  </div>
+                </div>
+    
+              </div>
+            </div>
+          </div>
+    
+          <!-- RIGHT: Result panel -->
+          <div class="col-lg-5">
+
+            <!-- Shot Clock -->
+        {% include 'components/ui/scanner-clock.html' %}
+    
+            <!-- Placeholder -->
+            <div class="card" id="scanPlaceholder">
+              <div class="card-body d-flex flex-column justify-content-center align-items-center text-center py-5">
+                <div class="mb-3">
+                  <i class="ti ti-123 text-secondary" style="font-size: 3.5rem;"></i>
+                </div>
+                <h3 class="mb-1 text-secondary">No employee loaded</h3>
+                <p class="text-secondary mb-4">Enter an employee ID and press Find.</p>
+                <div class="w-75 placeholder-glow">
+                  <div class="placeholder placeholder-xs col-8 mb-2"></div>
+                  <div class="placeholder placeholder-xs col-5 mb-2"></div>
+                  <div class="placeholder placeholder-xs col-6 mb-2"></div>
+                  <div class="placeholder placeholder-xs col-4"></div>
+                </div>
+                <div class="mt-4 w-75 placeholder-glow">
+                  <a href="#" tabindex="-1" class="btn btn-primary disabled placeholder col-12 mb-2" aria-hidden="true"></a>
+                  <a href="#" tabindex="-1" class="btn btn-secondary disabled placeholder col-12" aria-hidden="true"></a>
+                </div>
+              </div>
+            </div>
+    
+            <!-- Result card (hidden until lookup) -->
+            <div class="card d-none" id="scanResult">
+              <div class="card-header">
+                <h3 class="card-title">
+                  <i class="ti ti-user-check me-2 text-green"></i>Employee Found
+                </h3>
+                <div class="card-options">
+                  <span class="badge bg-green-lt">Loaded</span>
+                </div>
+              </div>
+              <div class="card-body d-flex flex-column justify-content-center">
+                <div class="d-flex align-items-center gap-3 mb-4">
+                  <span class="avatar avatar-xl" id="scanAvatar">--</span>
+                  <div>
+                    <div class="fw-medium fs-4" id="scanEmpName">—</div>
+                    <div class="text-secondary" id="scanEmpId">—</div>
+                  </div>
+                </div>
+                <div class="d-flex flex-column gap-2">
+                  <div class="row align-items-center">
+                    <div class="col-4 text-secondary small">Department</div>
+                    <div class="col-8 fw-medium" id="scanDept">—</div>
+                  </div>
+                  <div class="row align-items-center">
+                    <div class="col-4 text-secondary small">Position</div>
+                    <div class="col-8 fw-medium" id="scanPosition">—</div>
+                  </div>
+                  <hr class="my-1">
+                  <div class="row align-items-center">
+                    <div class="col-4 text-secondary small">Date</div>
+                    <div class="col-8 fw-medium" id="scanDate">—</div>
+                  </div>
+                  <div class="row align-items-center">
+                    <div class="col-4 text-secondary small">Time</div>
+                    <div class="col-8 fw-medium" id="scanTime">—</div>
+                  </div>
+                </div>
+              </div>
+              <div class="card-footer">
+                <form method="POST" action="{% url 'scan-attendance' %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="employee_id" id="resultEmpId">
+                  <div class="d-grid gap-2">
+                    <button type="submit" name="log_action" value="time_in" class="btn btn-primary btn-lg">
+                      <i class="ti ti-login me-2"></i>Record as TIME IN
+                    </button>
+                    <button type="submit" name="log_action" value="time_out" class="btn btn-secondary btn-lg">
+                      <i class="ti ti-logout me-2"></i>Record as TIME OUT
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+    
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hidden modal triggers (required by scanner script — do not remove) -->
+    <button id="duplicationModalTrigger" data-bs-toggle="modal" data-bs-target="#duplicationModal" style="display:none;"></button>
+    <button id="actionConfirmModalTrigger" data-bs-toggle="modal" data-bs-target="#actionConfirmModal" style="display:none;"></button>
+
+    <!--  ═══════════════════════════════════════════
+          MODAL — Confirm Time In / Time Out Action
+      ═══════════════════════════════════════════  -->
+    <div class="modal modal-blur fade" id="actionConfirmModal" tabindex="-1" role="dialog" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+        <div class="modal-content">
+          <div class="modal-body text-center py-4">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-lg text-warning">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M12 9v4" />
+              <path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0" />
+              <path d="M12 16h.01" />
+            </svg>
+            <h3 class="mt-3">Confirm Action</h3>
+            <div>
+              Are you sure you want to record this as
+              <span class="fw-bold" id="actionConfirmLabel">Time In</span>?
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-ghost-secondary w-100" id="actionConfirmNoBtn" data-bs-dismiss="modal">No</button>
+            <button type="button" class="btn btn-primary w-100" id="actionConfirmYesBtn" data-bs-dismiss="modal">Yes</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ── Numpad ────────────────────────────────────────────
+      const display   = document.getElementById('empCodeDisplay');
+      const MAX_DIGITS = 5;
+
+      document.querySelectorAll('.numpad-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (display.value.length >= MAX_DIGITS) return;
+          display.value += btn.dataset.value;
+        });
+      });
+
+      document.getElementById('btnBackspace').addEventListener('click', () => {
+        display.value = display.value.slice(0, -1);
+      });
+
+      document.getElementById('btnClear').addEventListener('click', () => {
+        display.value = '';
+        resetResultCard();
+      });
+
+      // ── Lookup ────────────────────────────────────────────
+      document.getElementById('btnLookup').addEventListener('click', () => {
+        const empId = display.value.trim();
+        if (!empId) return;
+        lookupEmployee(empId);
+      });
+
+      // Also trigger lookup on Enter key
+      display.addEventListener('keydown', e => {
+        if (e.key === 'Enter') lookupEmployee(display.value.trim());
+      });
+
+      async function lookupEmployee(empId) {
+        const btn = document.getElementById('btnLookup');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Finding…';
+
+        try {
+          const url  = `/employee-code/lookup/${empId}/`;
+          const res  = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+          const data = await res.json();
+
+          if (data.found) {
+            populateResultCard(data);
+          } else {
+            showToastModal('Employee not found', 'warning');
+          }
+        } catch {
+            showToastModal('Something went wrong. Please try again', 'danger');
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = 'Find';
+        }
+      }
+
+      let pendingEmpId  = null;
+      let pendingAction = null;
+
+      let confirmTimeOutModal;
+      document.addEventListener('DOMContentLoaded', function () {
+        confirmTimeOutModal = tabler.Modal.getOrCreateInstance(document.getElementById('confirmTimeOutModal'));
+      });
+
+      function resetAfterSubmit() {
+        display.value = '';
+        resetResultCard();
+      }
+
+      function submitAttendance(empId, action) {
+        fetch("{% url 'scan-attendance' %}", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-CSRFToken": "{{ csrf_token }}"
+          },
+          body: new URLSearchParams({ employee_id: empId, log_action: action })
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === "time_recorded") {
+            showToastModal('Time ' + data.log_type + ' recorded.', 'success');
+            resetAfterSubmit();
+          }
+          else if (data.status === "duplicate") {
+            let rec = data.last_record;
+            document.getElementById('earlyEmpName').innerText = rec.lr_empFN;
+            document.getElementById('earlierTime').innerText  = rec.time;
+            document.getElementById('earlierStat').innerText  = rec.log_type;
+            document.getElementById('earlierDate').innerText  = rec.date;
+            document.getElementById('dupEmpId').value  = empId;
+            document.getElementById('dupAction').value = action;
+            document.getElementById('latestTime').innerText = document.getElementById('scanTime').textContent;
+            document.getElementById('latestDate').innerText = document.getElementById('scanDate').textContent;
+            document.getElementById('duplicationModalTrigger').click();
+          }
+          else if (data.status === "time_recorded_no_time_in") {
+            showToastModal('Time Out recorded. Flagged for Department Head approval under Missing Logs.', 'info');
+            resetAfterSubmit();
+          }
+          else {
+            showToastModal('Something went wrong', 'danger');
+          }
+        });
+      }
+
+      let actionConfirmEmpId    = null;
+      let actionConfirmAction   = null;
+      let actionWasCancelled    = false;
+      let pendingNoTimeInEmpId  = null;
+      let pendingNoTimeInAction = null;
+      let actionConfirmModal;
+
+      document.addEventListener('DOMContentLoaded', function () {
+        confirmTimeOutModal  = tabler.Modal.getOrCreateInstance(document.getElementById('confirmTimeOutModal'));
+        actionConfirmModal   = tabler.Modal.getOrCreateInstance(document.getElementById('actionConfirmModal'));
+
+        document.getElementById('actionConfirmModal').addEventListener('hidden.bs.modal', function () {
+          if (actionWasCancelled) {
+            actionWasCancelled = false;
+            resetAfterSubmit();
+            return;
+          }
+          if (pendingNoTimeInEmpId) {
+            pendingEmpId          = pendingNoTimeInEmpId;
+            pendingAction         = pendingNoTimeInAction;
+            pendingNoTimeInEmpId  = null;
+            pendingNoTimeInAction = null;
+            confirmTimeOutModal.show();
+          }
+        });
+
+        document.getElementById('confirmTimeOutModal').addEventListener('hidden.bs.modal', function () {
+          pendingEmpId  = null;
+          pendingAction = null;
+        });
+      });
+
+      function proceedAfterConfirm(empId, action) {
+        if (action === 'time_out') {
+          fetch(`{% url 'check-time-in-status' %}?employee_id=${encodeURIComponent(empId)}`)
+            .then(res => res.json())
+            .then(data => {
+              if (data.has_time_in === false) {
+                // Defer showing confirmTimeOutModal until actionConfirmModal
+                // has fully finished hiding, to avoid overlapping backdrops.
+                pendingNoTimeInEmpId  = empId;
+                pendingNoTimeInAction = action;
+              } else {
+                submitAttendance(empId, action);
+              }
+            })
+            .catch(() => submitAttendance(empId, action));
+        } else {
+          submitAttendance(empId, action);
+        }
+      }
+
+      document.querySelector('#scanResult form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        actionConfirmEmpId  = document.getElementById('resultEmpId').value;
+        actionConfirmAction = e.submitter.value;
+
+        document.getElementById('actionConfirmLabel').textContent =
+          actionConfirmAction === 'time_in' ? 'Time In' : 'Time Out';
+
+        actionConfirmModal.show();
+      });
+
+      document.getElementById('actionConfirmYesBtn').addEventListener('click', function() {
+        const empId  = actionConfirmEmpId;
+        const action = actionConfirmAction;
+        actionConfirmEmpId  = null;
+        actionConfirmAction = null;
+        proceedAfterConfirm(empId, action);
+      });
+
+      document.getElementById('actionConfirmNoBtn').addEventListener('click', function() {
+        actionConfirmEmpId  = null;
+        actionConfirmAction = null;
+        actionWasCancelled  = true;
+        showToastModal('Attendance recording cancelled.', 'info');
+      });
+
+      document.getElementById('confirmTimeOutBtn').addEventListener('click', function() {
+        const empId  = pendingEmpId;
+        const action = pendingAction;
+        pendingEmpId  = null;
+        pendingAction = null;
+        submitAttendance(empId, action);
+      });
+
+      document.getElementById('confirmTimeOutCancelBtn').addEventListener('click', function() {
+        pendingEmpId  = null;
+        pendingAction = null;
+        showToastModal('Time Out cancelled.', 'info');
+      });
+
+      document.getElementById('duplicationForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        let formData = new FormData(this);
+        fetch("{% url 'overwrite-attendance' %}", {
+          method: "POST",
+          headers: { "X-CSRFToken": "{{ csrf_token }}" },
+          body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === "overwritten") {
+            tabler.Modal.getOrCreateInstance(document.getElementById('duplicationModal')).hide();
+            showToastModal('Latest entry used', 'info');
+            resetAfterSubmit();
+          } else {
+            showToastModal('Failed to overwrite', 'danger');
+          }
+        });
+      });
+
+      document.getElementById('duplicationForm').addEventListener('reset', function(e) {
+        e.preventDefault();
+        showToastModal('Earlier entry retained.', 'info');
+        resetAfterSubmit();
+      });
+
+      // ── Populate result card ───────────────────────────────
+      function populateResultCard(data) {
+        const now    = new Date(Date.now() - (window.CLOCK_OFFSET_MINUTES || 0) * 60 * 1000);
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+        const hours   = now.getHours();
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        const ampm    = hours >= 12 ? 'PM' : 'AM';
+        const h12     = String(hours % 12 || 12).padStart(2, '0');
+
+        const timeStr = `${h12}:${minutes}:${seconds} ${ampm}`;
+        const dateStr = `${months[now.getMonth()]} ${String(now.getDate()).padStart(2, '0')}, ${now.getFullYear()}`;
+
+        // Initials
+        const initials = (data.first_name[0] + data.last_name[0]).toUpperCase();
+
+        document.getElementById('scanAvatar').textContent   = initials;
+        document.getElementById('scanEmpName').textContent  = data.name;
+        document.getElementById('scanEmpId').textContent    = 'Employee No. ' + data.employee_id;
+        document.getElementById('scanDept').textContent     = data.department;
+        document.getElementById('scanPosition').textContent = data.position;
+        document.getElementById('scanDate').textContent     = dateStr;
+        document.getElementById('scanTime').textContent     = timeStr;
+        document.getElementById('resultEmpId').value        = data.employee_id;
+
+        document.getElementById('scanPlaceholder').classList.add('d-none');
+        document.getElementById('scanResult').classList.remove('d-none');
+        document.getElementById('notFoundAlert')?.remove();
+      }
+
+      // ── Not found state ───────────────────────────────────
+      function showNotFound(message) {
+        resetResultCard();
+
+        // Show inline alert below display
+        document.getElementById('notFoundAlert')?.remove();
+        const alert = document.createElement('div');
+        alert.id        = 'notFoundAlert';
+        alert.className = 'alert alert-danger mt-2 mb-0';
+        alert.innerHTML = `<i class="ti ti-alert-circle me-2"></i>${message}`;
+        display.closest('.mb-3').after(alert);
+      }
+
+      function resetResultCard() {
+        document.getElementById('scanResult').classList.add('d-none');
+        document.getElementById('scanPlaceholder').classList.remove('d-none');
+        document.getElementById('notFoundAlert')?.remove();
+      }
+
+      // ── Physical keyboard input ───────────────────────────
+      let _lastShortcutTime = 0;
+      const SHORTCUT_COOLDOWN_MS = 600;
+
+      function shortcutAllowed() {
+        const now = Date.now();
+        if (now - _lastShortcutTime < SHORTCUT_COOLDOWN_MS) {
+          showToast('Please wait a moment before pressing again.', 'warning');
+          return false;
+        }
+        _lastShortcutTime = now;
+        return true;
+      }
+
+      document.addEventListener('keydown', e => {
+        const duplicationOpen    = document.getElementById('duplicationModal').classList.contains('show');
+        const confirmTimeOutOpen = document.getElementById('confirmTimeOutModal').classList.contains('show');
+        const actionConfirmOpen  = document.getElementById('actionConfirmModal').classList.contains('show');
+        const scanResultShown    = !document.getElementById('scanResult').classList.contains('d-none');
+
+        const isShortcutContext = duplicationOpen || confirmTimeOutOpen || actionConfirmOpen || scanResultShown;
+        const isShortcutKey     = ['Enter', ' ', 'Escape'].includes(e.key);
+
+        if (isShortcutContext && isShortcutKey && !shortcutAllowed()) {
+          e.preventDefault();
+          return;
+        }
+
+        if (duplicationOpen) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('duplicationForm').requestSubmit();
+          } else if (e.key === 'Escape') {
+            e.preventDefault();
+            document.getElementById('retainEntryBtn').click();
+          }
+          return;
+        }
+
+        if (confirmTimeOutOpen) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('confirmTimeOutBtn').click();
+          } else if (e.key === 'Escape') {
+            e.preventDefault();
+            document.getElementById('confirmTimeOutCancelBtn').click();
+          }
+          return;
+        }
+
+        if (actionConfirmOpen) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('actionConfirmYesBtn').click();
+          } else if (e.key === 'Escape') {
+            e.preventDefault();
+            document.getElementById('actionConfirmNoBtn').click();
+          }
+          return;
+        }
+
+        if (scanResultShown) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            document.querySelector('#scanResult form button[value="time_in"]').click();
+          } else if (e.key === ' ') {
+            e.preventDefault();
+            document.querySelector('#scanResult form button[value="time_out"]').click();
+          } else if (e.key === 'Escape') {
+            e.preventDefault();
+            display.value = '';
+            resetResultCard();
+          }
+          return;
+        }
+
+        if (e.key >= '0' && e.key <= '9') {
+          if (display.value.length >= MAX_DIGITS) return;
+          display.value += e.key;
+        } else if (e.key === 'Backspace') {
+          display.value = display.value.slice(0, -1);
+        } else if (e.key === 'Escape') {
+          display.value = '';
+          resetResultCard();
+        } else if (e.key === 'Enter') {
+          const empId = display.value.trim();
+          if (empId) lookupEmployee(empId);
+        }
+      });
+    </script>
+{% endblock %}

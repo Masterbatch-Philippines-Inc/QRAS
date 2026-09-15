@@ -1,6 +1,6 @@
 from django.utils import timezone
 from datetime import timedelta
-from apps.qras.models.management import BREAK_HOURS
+from apps.qras.models.schedules import BREAK_HOURS
 from ...dataclasses import HoursResult
 
 

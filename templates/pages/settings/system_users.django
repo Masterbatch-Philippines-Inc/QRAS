@@ -1,0 +1,434 @@
+{% extends 'base.django' %}
+{% load static %}
+{% block content %}
+    <!-- ── Alert (shown after actions) ───────────────────────── -->
+    <div id="pageAlert" class="alert d-none mb-3" role="alert"></div>
+    <div class="page-wrapper">
+      <div class="container-xl mt-5">
+        <div class="d-flex align-items-center justify-content-between" style="margin-bottom:.35rem;">
+          <h2 class="mb-0">Settings</h2>
+          <button id="tours-sys-users-help-btn" class="btn btn-sm btn-ghost-secondary" title="Employee Records page tour">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            &nbsp;Need Help
+          </button>
+        </div>
+        <ol class="breadcrumb text-secondary" aria-label="breadcrumbs" style="margin: 0 0 1rem 0;">
+          <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+          <li class="breadcrumb-item active" aria-current="page">
+            System Users
+          </li>
+        </ol>
+        <div class="card">
+          <div class="card-table">
+            <div class="card-header">
+              <div class="row w-full align-items-center">
+                <!-- Left side -->
+                <div class="col">
+                  <h3 class="card-title mb-0">System Users</h3>
+                  <p class="text-secondary m-0">Description for system user records.</p>
+                </div>
+                <!-- Right side -->
+                <div class="col-md-auto col-sm-12">
+                  <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <!-- SEARCH -->
+                    <div class="input-group input-group-flat w-auto">
+                      <span class="input-group-text">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                          fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/>
+                        </svg>
+                      </span>
+                      <input id="sys-users-search" type="text" class="form-control" autocomplete="off" placeholder="Search…" />
+                    </div>
+                    <!-- FORM -->
+                    <form method="GET" class="d-flex gap-2 align-items-center mb-0">
+                      <label class="form-check form-switch mb-0"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="top"
+                            title="Toggle to include deactivated users">
+                        <input class="form-check-input" type="checkbox" name="show_inactive" value="true"
+                              {% if show_inactive %}checked{% endif %}
+                              onchange="this.form.submit()">
+                      </label>
+                    </form>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                      Add System User
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-vcenter table-hover card-table" id="tours-sysusers-rec">
+              <thead>
+                <tr>
+                  <th>System User</th>
+                  <th>Email</th>
+                  <th>System Role</th>
+                  <th>Last Login</th>
+                  {% if show_inactive %}<th>Status</th>{% endif %}
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for u in system_users %}
+                <tr class="sys-users-row">
+                  <td class="fw-medium">
+                    {{ u.last_name }}, {{ u.first_name }}
+                  </td>
+                  <td class="text-secondary">{{ u.email }}</td>
+                  <td>
+                    {% if u.role %}
+                    <span class="text-secondary">{{ u.role.name }}</span>
+                    {% else %}
+                    <span class="text-secondary">None</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <div data-online-badge="{{ u.pk }}">
+                      {% if u.pk in logged_in_ids %}
+                      <span class="text-green me-1" style="font-size:13px;">Logged In</span>
+                      {% else %}
+                      <span class="text-secondary me-1" style="font-size:13px;">Logged Out</span>
+                      {% endif %}
+                    </div>
+                    <div>
+                      {% if u.last_login %}
+                      <span class="text-secondary" style="font-size:12px;">{{ u.last_login|date:"M d, Y - g:i A" }}</span>
+                      {% else %}
+                      <span class="text-secondary" style="font-size:12px;">Not Yet</span>
+                      {% endif %}
+                    </div>
+                  </td>
+                  {% if show_inactive %}
+                  <td>
+                    {% if u.is_active %}
+                      <span class="badge bg-green-lt">Active</span>
+                    {% else %}
+                      <span class="badge bg-red-lt">Inactive</span>
+                    {% endif %}
+                  </td>
+                  {% endif %}
+                  <td>
+                    {% if u != request.user %}
+                    <div class="d-flex gap-1">
+                      <button
+                        class="btn btn-sm btn-toggle-user {% if u.is_active %}btn-ghost-danger{% else %}btn-ghost-success{% endif %}"
+                        data-pk="{{ u.pk }}"
+                        data-active="{% if u.is_active %}1{% else %}0{% endif %}"
+                        data-name="{{ u.last_name }}, {{ u.first_name }}"
+                        data-deactivate-url="{% url 'system-users-deactivate' u.pk %}"
+                        data-reactivate-url="{% url 'system-users-reactivate' %}">
+                        {% if u.is_active %}Deactivate{% else %}Restore{% endif %}
+                      </button>
+                      <button
+                        class="btn btn-sm btn-ghost-teal"
+                        data-name="{{ u.last_name }}, {{ u.first_name }}"
+                        data-reset-url="{% url 'system-users-reset-password' u.pk %}"
+                        data-bs-toggle="modal"
+                        data-bs-target="#resetPasswordModal">
+                        Reset Password
+                      </button>
+                      {% if u.is_active %}
+                      <button
+                        class="btn btn-sm btn-primary"
+                        data-pk="{{ u.pk }}"
+                        data-role="{{ u.role.id|default:'' }}"
+                        data-email="{{ u.email }}"
+                        data-name="{{ u.last_name }}, {{ u.first_name }}"
+                        data-department="{{ u.department.id|default:'' }}"
+                        data-role-name="{{ u.role.name|default:'' }}"
+                        data-employee="{{ u.employee.id|default:'' }}"
+                        data-update-url="{% url 'system-users-update' u.pk %}"
+                        data-bs-toggle="modal"
+                        data-bs-target="#editUserModal">
+                        Edit
+                      </button>
+                      {% endif %}
+                    </div>
+                    {% else %}
+                    <span class="text-secondary small">Current user</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% empty %}
+                <tr class="tc-django-empty">
+                  <td colspan="4" class="text-center text-secondary py-5">
+                    <i class="ti ti-users-off mb-2" style="font-size:2rem; display:block;"></i>
+                    No system users found.
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="card-footer d-flex align-items-center">
+            <div class="dropdown clzst">
+              <a class="btn dropdown-toggle" data-bs-toggle="dropdown">
+                <span id="sys-users-page-count" class="me-1">8</span> records
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" onclick="setPageSize(8)">8 records</a>
+                <a class="dropdown-item" onclick="setPageSize(20)">20 records</a>
+                <a class="dropdown-item" onclick="setPageSize(50)">50 records</a>
+              </div>
+            </div>
+            <ul class="pagination m-0 ms-auto" id="sys-users-pagination"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+
+      // ── CSRF ──────────────────────────────────────────────────────
+      function getCSRF() {
+        for (let c of document.cookie.split(';')) {
+          c = c.trim();
+          if (c.startsWith('csrftoken=')) return c.substring('csrftoken='.length);
+        }
+        return '';
+      }
+
+      // ── Add User ───────────────────────────────────────────────────
+      function submitCreateUser() {
+        const btn = document.getElementById('addUserBtn');
+        const err = document.getElementById('addUserError');
+        const suc = document.getElementById('addUserSuccess');
+
+        err.classList.add('d-none');
+        suc.classList.add('d-none');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving…';
+
+        fetch("{% url 'system-users-create' %}", {
+          method:  'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken':  getCSRF()
+          },
+            body: new URLSearchParams({
+              first_name:  document.getElementById('addFirstName').value.trim(),
+              last_name:   document.getElementById('addLastName').value.trim(),
+              role:        document.getElementById('addRole').value,
+              email:       document.getElementById('addEmail').value.trim(),
+              department:  document.getElementById('addDepartment').value,
+              employee:    document.getElementById('addEmployee').value,
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+          if (data.status === 'created') {
+            const note = data.email_sent
+              ? 'User created. Login credentials have been sent to their email.'
+              : 'User created. Note: the credentials email could not be delivered — please share them manually.';
+            document.querySelector('#addUserModal [data-bs-dismiss="modal"]').click();
+            alert(note);
+
+            setTimeout(() => location.reload(), 1500);
+          } else {
+            err.textContent = data.message;
+            err.classList.remove('d-none');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="ti ti-device-floppy me-1"></i>Save changes';
+          }
+        })
+        .catch(() => {
+          err.textContent = 'Something went wrong. Please try again.';
+          err.classList.remove('d-none');
+          btn.disabled = false;
+          btn.innerHTML = '<i class="ti ti-device-floppy me-1"></i>Save changes';
+        });
+      }
+
+      // Reset add modal when closed
+      document.getElementById('addUserModal').addEventListener('hidden.bs.modal', function () {
+        ['addFirstName','addLastName','addEmail'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('addRole').value     = '';
+        document.getElementById('addEmployee').value = '';
+        document.getElementById('addUserError').classList.add('d-none');
+        document.getElementById('addUserSuccess').classList.add('d-none');
+        const btn = document.getElementById('addUserBtn');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ti ti-device-floppy me-1"></i>Save changes';
+      });
+
+      // ── Edit User ──────────────────────────────────────────────────
+      document.getElementById('editUserModal').addEventListener('show.bs.modal', function (event) {
+        const btn = event.relatedTarget;
+        document.getElementById('editUpdateUrl').value        = btn.dataset.updateUrl;
+        document.getElementById('editModalTitle').textContent = `Editing ${btn.dataset.name}'s account`;
+        document.getElementById('editRole').value             = btn.dataset.role;
+        document.getElementById('editEmail').value            = btn.dataset.email;
+        const isDeptHead = btn.dataset.roleName === 'Department Head';
+        document.getElementById('editDeptWrapper').classList.toggle('d-none', !isDeptHead);
+        document.getElementById('editDepartment').value = isDeptHead ? btn.dataset.department : '';
+        document.getElementById('editEmployee').value = btn.dataset.employee || '';
+        document.getElementById('editUserError').classList.add('d-none');
+      });
+
+      function submitEditUser() {
+        const url = document.getElementById('editUpdateUrl').value;
+        const err = document.getElementById('editUserError');
+        err.classList.add('d-none');
+
+        fetch(url, {
+          method:  'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken':  getCSRF()
+          },
+          body: new URLSearchParams({
+            role:       document.getElementById('editRole').value,
+            email:      document.getElementById('editEmail').value.trim(),
+            department: document.getElementById('editDepartment').value,
+            employee:   document.getElementById('editEmployee').value,
+          })
+        })
+        .then(r => r.json())
+        .then(data => {
+          if (data.status === 'updated') {
+            document.querySelector('#editUserModal [data-bs-dismiss="modal"]').click();
+            alert("User account updated successfully.");
+            setTimeout(() => location.reload(), 1200);
+          } else if (data.status === 'warning') {
+            if (confirm(data.message)) {
+              // User confirmed — re-submit with force flag
+              const url    = document.getElementById('editUpdateUrl').value;
+              const params = new URLSearchParams({
+                role:       document.getElementById('editRole').value,
+                email:      document.getElementById('editEmail').value.trim(),
+                department: document.getElementById('editDepartment').value,
+                force:      '1',
+              });
+              fetch(url, {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': getCSRF() },
+                body:    params
+              })
+              .then(r => r.json())
+              .then(d => {
+                if (d.status === 'updated') {
+                  document.querySelector('#editUserModal [data-bs-dismiss="modal"]').click();
+                  alert("User account updated successfully.");
+                  setTimeout(() => location.reload(), 1200);
+                } else {
+                  err.textContent = d.message;
+                  err.classList.remove('d-none');
+                }
+              });
+            } else {
+              btn.disabled = false;
+              btn.innerHTML = '<i class="ti ti-device-floppy me-1"></i>Save changes';
+            }
+          } else {
+            err.textContent = data.message;
+            err.classList.remove('d-none');
+          }
+        })
+        .catch(() => {
+          err.textContent = 'Something went wrong. Please try again.';
+          err.classList.remove('d-none');
+        });
+      }
+
+      // ── Reset Password ─────────────────────────────────────────────
+      let _resetUrl = '';
+
+      document.getElementById('resetPasswordModal').addEventListener('show.bs.modal', function (event) {
+        const btn = event.relatedTarget;
+        _resetUrl = btn.dataset.resetUrl;
+        document.getElementById('resetUserName').textContent = btn.dataset.name;
+        document.getElementById('resetPasswordError').classList.add('d-none');
+        const proceedBtn = document.getElementById('resetPasswordBtn');
+        proceedBtn.disabled = false;
+        proceedBtn.innerHTML = '<i class="ti ti-key me-1"></i>Proceed';
+      });
+
+      function submitResetPassword() {
+        const btn = document.getElementById('resetPasswordBtn');
+        const err = document.getElementById('resetPasswordError');
+        err.classList.add('d-none');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Processing…';
+
+        fetch(_resetUrl, {
+          method:  'POST',
+          headers: { 'X-CSRFToken': getCSRF() }
+        })
+        .then(r => r.json())
+        .then(data => {
+          if (data.status === 'reset') {
+            const note = data.email_sent
+              ? 'Password has been reset and sent to the user\'s email.'
+              : 'Password reset. Note: the email could not be delivered — please share the new credentials manually.';
+            document.querySelector('#resetPasswordModal [data-bs-dismiss="modal"]').click();
+            alert(note);
+          } else {
+            err.textContent = data.message;
+            err.classList.remove('d-none');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="ti ti-key me-1"></i>Proceed';
+          }
+        })
+        .catch(() => {
+          err.textContent = 'Something went wrong. Please try again.';
+          err.classList.remove('d-none');
+          btn.disabled = false;
+          btn.innerHTML = '<i class="ti ti-key me-1"></i>Proceed';
+        });
+      }
+
+      // ── Deactivate / Restore toggle ────────────────────────────────
+      document.querySelectorAll('.btn-toggle-user').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const isActive = btn.dataset.active === '1';
+          const label    = isActive ? 'deactivate' : 'restore';
+          if (!confirm(`Are you sure you want to ${label} ${btn.dataset.name}'s account?`)) return;
+          if (isActive) {
+            const res  = await fetch(btn.dataset.deactivateUrl, {
+              method: 'POST', headers: { 'X-CSRFToken': getCSRF() }
+            });
+            const data = await res.json();
+            if (data.status === 'deactivated') {
+              alert('User account has been deactivated.');
+              location.reload();
+            } else {
+              alert(data.message);
+            }
+          } else {
+            const params = new URLSearchParams();
+            params.append('user_ids', btn.dataset.pk ?? '');
+            const res  = await fetch(btn.dataset.reactivateUrl, {
+              method:  'POST',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': getCSRF() },
+              body:    params
+            });
+            const data = await res.json();
+            if (data.status === 'reactivated') {
+              alert('User account has been restored.');
+              location.reload();
+            } else {
+              alert(data.message);
+            }
+          }
+        });
+      });
+
+    </script>
+    <script>
+      initTableController({
+        searchId:    'sys-users-search',
+        pageCountId: 'sys-users-page-count',
+        paginId:     'sys-users-pagination',
+        rowSelector: '.sys-users-row',
+        defaultSize: 8,
+        setFnName:   'setPageSize',
+      });
+    </script>
+    <script src="{% static 'js/tours/settings/system-users.js' %}"></script>
+{% endblock %}

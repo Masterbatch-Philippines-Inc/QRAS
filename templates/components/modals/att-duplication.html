@@ -1,0 +1,74 @@
+{% load static %}
+  <!--  ═══════════════════════════════════════════
+        MODAL — Duplicate Entries
+    ═══════════════════════════════════════════  -->
+  <div class="modal modal-blur fade" id="duplicationModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+      <div class="modal-content">
+        <form method="POST" id="duplicationForm" action="{% url 'overwrite-attendance' %}">
+          {% csrf_token %}
+          <!-- Modal Header -->
+          <div class="modal-header">
+            <h5 class="modal-title" id="statusText">Duplicate Entry Detected</h5>
+            {% comment %} <button type="button" id="timeInClose" class="btn-close" data-bs-dismiss="modal"></button> {% endcomment %}
+          </div>
+          <!-- Modal Body -->
+          <div class="modal-body">
+            <div class="text-center mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg text-warning mb-2" width="48" height="48" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path d="M12 9v2m0 4v.01" />
+                <circle cx="12" cy="12" r="9" />
+              </svg>
+              <h3 class="mb-1">Hi <span id="earlyEmpName"></span>, you already do <span class="text-primary fw-bold" id="earlierStat"></span> today.</h3>
+              <p class="text-secondary mb-0">Choose which entry should be kept on record?</p>
+            </div>
+
+            <div class="row row-cards">
+              <div class="col-6">
+                <div class="card card-sm">
+                  <div class="card-body">
+                    <div class="text-secondary mb-2">Earlier Entry</div>
+                    <div class="datagrid">
+                      <div class="datagrid-item">
+                        <div class="datagrid-title">Time</div>
+                        <div class="datagrid-content fw-bold" id="earlierTime"></div>
+                      </div>
+                      <div class="datagrid-item">
+                        <div class="datagrid-title">Date</div>
+                        <div class="datagrid-content fw-bold" id="earlierDate"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="card card-sm border-primary">
+                  <div class="card-body">
+                    <div class="text-primary mb-2">Latest Entry</div>
+                    <div class="datagrid">
+                      <div class="datagrid-item">
+                        <div class="datagrid-title">Time</div>
+                        <div class="datagrid-content fw-bold" id="latestTime"></div>
+                      </div>
+                      <div class="datagrid-item">
+                        <div class="datagrid-title">Date</div>
+                        <div class="datagrid-content fw-bold" id="latestDate"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Modal Footer -->
+          <div class="modal-footer">
+            <input type="hidden" name="employee_id" id="dupEmpId">
+            <input type="hidden" name="log_action" id="dupAction">
+            <button type="reset" class="btn btn-outline-secondary w-100" data-bs-dismiss="modal" id="retainEntryBtn">No, retain earlier entry</button>
+            <button type="submit" class="btn btn-primary w-100">Yes, use latest entry</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>

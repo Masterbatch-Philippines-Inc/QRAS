@@ -1,0 +1,307 @@
+{% extends 'base.django' %}
+{% load static %}
+{% block content %}
+    <script>const positionsData = {{ positions_json|safe }};</script>
+    <style>#depPostion-select-tags + .ts-wrapper.disabled .ts-control {background-color: var(--tblr-bg-surface-secondary, #f1f5f9);opacity: 0.6;cursor: no-drop !important;pointer-events: disabled;border-radius : var(--tblr-border-radius) !important;}</style>
+    <div class="page-wrapper">
+      <div class="container-xl mt-5">
+        <div class="d-flex align-items-center justify-content-between" style="margin-bottom:.35rem;">
+          <h2 class="mb-0">Add New Employee</h2>
+          <button id="add-emp-btn-help-tour" class="btn btn-sm btn-ghost-secondary" title="Add Employee page tour">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            &nbsp;Need Help
+          </button>
+        </div>
+        <ol class="breadcrumb text-secondary" aria-label="breadcrumbs" style="margin: 0 0 1rem 0;">
+          <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'employee-records' %}">Employee Records</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Add New Employee</li>
+        </ol>
+
+        <form id="addEmployeeForm" method="POST" action="{% url 'add-employee' %}" novalidate>
+          {% csrf_token %}
+          <div class="row">
+
+            <!-- LEFT: Main fields -->
+            <div class="col-lg-8">
+
+              <!-- Basic Info -->
+              <div id="card-basic-info" class="card mb-3">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    Basic Information
+                  </h3>
+                </div>
+                <div class="card-body">
+                  <div class="row g-3">
+                    <div class="col-md-4">
+                      <label class="form-label required">First Name</label>
+                      <input type="text" name="first_name" class="form-control {% if errors.first_name %}is-invalid{% endif %}"
+                            value="{{ post.first_name|default:'' }}" placeholder="Juan">
+                      {% if errors.first_name %}<div class="invalid-feedback">{{ errors.first_name }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label">Middle Name</label>
+                      <input type="text" name="middle_name" class="form-control"
+                            value="{{ post.middle_name|default:'' }}" placeholder="Santos">
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label required">Last Name</label>
+                      <input type="text" name="last_name" class="form-control {% if errors.last_name %}is-invalid{% endif %}"
+                            value="{{ post.last_name|default:'' }}" placeholder="Dela Cruz">
+                      {% if errors.last_name %}<div class="invalid-feedback">{{ errors.last_name }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label">Suffix</label>
+                      <input type="text" name="suffix_name" class="form-control"
+                            value="{{ post.suffix_name|default:'' }}" placeholder="Jr., Sr., III">
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label">Birth Date</label>
+                      <input type="text" name="birth_date" class="form-control" value="{{ post.birth_date|default:'' }}" data-mask="00/00/0000" data-mask-visible="true" placeholder="00/00/0000" autocomplete="off">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Employment -->
+              <div id="card-employment" class="card mb-3">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    Employment
+                  </h3>
+                </div>
+                <div class="card-body">
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label required">Employee ID</label>
+                      <input type="text" name="emp_id" class="form-control {% if errors.emp_id %}is-invalid{% endif %}" value="{{ post.emp_id|default:'' }}" data-mask="0 0 0 0 0" data-mask-visible="true" placeholder="0 0 0 0 0" autocomplete="off">
+                      {% if errors.emp_id %}<div class="invalid-feedback">{{ errors.emp_id }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label required">Department</label>
+                      <select id="department-select-tags" name="department_id" class="form-select {% if errors.department_id %}is-invalid{% endif %}" placeholder="Choose a department">
+                        <option value="">— None —</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept.id }}" {% if post.department_id == dept.id|stringformat:"s" %}selected{% endif %}>
+                          {{ dept.name }}
+                        </option>
+                        {% endfor %}
+                      </select>
+                      {% if errors.department_id %}<div class="invalid-feedback">{{ errors.department_id }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label required">Position</label>
+                      <select id="depPostion-select-tags" name="position_id" class="form-select {% if errors.position_id %}is-invalid{% endif %}" placeholder="Select a department first" disabled>
+                        <option value=""></option>
+                      </select>
+                      {% if errors.position_id %}<div class="invalid-feedback">{{ errors.position_id }}</div>{% endif %}
+                    </div>
+                    <script>
+                      (function () {
+                        const deptTS = new TomSelect('#department-select-tags', { create: false, maxItems: 1 });
+                        const posTS  = new TomSelect('#depPostion-select-tags', { create: false, maxItems: 1 });
+
+                        const savedDeptId = "{{ post.department_id|default:'' }}";
+                        const savedPosId  = "{{ post.position_id|default:'' }}";
+
+                        function updatePositions(deptId) {
+                          posTS.clear();
+                          posTS.clearOptions();
+                          if (!deptId) {
+                            posTS.addOption({ value: '', text: '— Select a department first —' });
+                            posTS.disable();
+                            return;
+                          }
+                          const filtered = positionsData.filter(p => String(p.department_id) === String(deptId));
+                          posTS.addOption({ value: '', text: '— Select one —' });
+                          filtered.forEach(p => posTS.addOption({ value: String(p.id), text: p.title }));
+                          posTS.enable();
+                          posTS.setValue('');
+                        }
+
+                        // On department change
+                        deptTS.on('change', function (val) {
+                          updatePositions(val);
+                        });
+
+                        // Restore state on validation error
+                        if (savedDeptId) {
+                          updatePositions(savedDeptId);
+                          if (savedPosId) posTS.setValue(savedPosId);
+                        } else {
+                          posTS.disable();
+                        }
+                      })();
+                    </script>
+                    <div class="col-md-6">
+                      <label class="form-label">Hire Date</label>
+                      <input type="text" name="hire_date" class="form-control" value="{{ post.hire_date|default:'' }}" data-mask="00/00/0000" data-mask-visible="true" placeholder="00/00/0000" autocomplete="off">
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Date Regularized</label>
+                      <input type="text" name="date_regularized" class="form-control" value="{{ post.date_regularized|default:'' }}" data-mask="00/00/0000" data-mask-visible="true" placeholder="00/00/0000" autocomplete="off">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Contact -->
+              <div id="card-contact" class="card mb-3">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    Contact
+                  </h3>
+                </div>
+                <div class="card-body">
+                  <div class="row g-3">
+                    <div class="col-md-12">
+                      <label class="form-label">Contact No.</label>
+                      <input type="text" id="editEmpContactNo" name="contact_no" class="form-control" data-mask="(+63)900-000-0000" data-mask-visible="true" placeholder="(+63)900-000-0000" autocomplete="off">
+                    </div>
+                    <div class="col-md-12">
+                      <label class="form-label">Address 1</label>
+                      <input type="text" id="editEmpAddress1" name="address_1" class="form-control" placeholder="House No., Street">
+                    </div>
+                    <div class="col-md-12">
+                      <label class="form-label">Address 2</label>
+                      <input type="text" id="editEmpAddress2" name="address_2" class="form-control" placeholder="Barangay, City, Province">
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Emergency Contact Person</label>
+                      <input type="text" id="editEmpSosName" name="sos_contact_person" class="form-control" placeholder="Maria Dela Cruz">
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Emergency Contact No.</label>
+                      {% comment %} <input type="text" id="editEmpSosNo" class="form-control" placeholder="0912-345-6789"> {% endcomment %}
+                      {% comment %} change (+63) to 0 before saving to database {% endcomment %}
+                      <input type="text" id="editEmpSosNo" name="sos_contact_no" class="form-control" data-mask="(+63)900-000-0000" data-mask-visible="true" placeholder="(+63)900-000-0000" autocomplete="off">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Gov ID No.s -->
+              <div id="card-govid" class="card">
+                <div class="card-header">
+                  <h3 class="card-title">Goverment I.D.</h3>
+                </div>
+                <div class="card-body">
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label">TIN No.</label>
+                      <div class="input-group">
+                        <span class="input-group-text"></span>
+                        <input type="text" id="editEmpTin" name="tin_no" class="form-control" data-mask="000-000-000" data-mask-visible="true" placeholder="00000-000" autocomplete="off">
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">SSS No.</label>
+                      <div class="input-group">
+                        <span class="input-group-text"></span>
+                        <input type="text" id="editEmpSss" name="sss_no" class="form-control" data-mask="00-0000000-0" data-mask-visible="true" placeholder="00-0000000-0" autocomplete="off">
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">PhilHealth No.</label>
+                      <div class="input-group">
+                        <span class="input-group-text"></span>
+                        <input type="text" id="editEmpPhilhealth" name="philhealth_no" class="form-control" data-mask="00-000000000-0" data-mask-visible="true" placeholder="00-000000000-0" autocomplete="off">
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Pag-IBIG No.</label>
+                      <div class="input-group">
+                        <span class="input-group-text"></span>
+                        <input type="text" id="editEmpPagibig" name="pagibig_no" class="form-control" data-mask="0000-0000-0000" data-mask-visible="true" placeholder="0000-0000-0000" autocomplete="off">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- RIGHT: Status + Actions -->
+            <div class="col-lg-4">
+              <div id="card-status" class="card mb-3">
+                <div class="card-header">
+                  <h3 class="card-title">Status</h3>
+                </div>
+                <div class="card-body">
+                  <label class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" name="is_active" checked>
+                    <span class="form-check-label">Active Employee</span>
+                  </label>
+                </div>
+              </div>
+
+              <div id="card-group" class="card mb-3">
+                <div class="card-header">
+                  <h3 class="card-title">Employee Group <span class="text-muted small">(optional)</span></h3>
+                </div>
+                <div class="card-body">
+                  <select id="group-select" name="group_id" class="form-select">
+                    <option value="">— None —</option>
+                    {% for grp in employee_groups %}
+                    <option value="{{ grp.id }}" {% if post.group_id == grp.id|stringformat:"s" %}selected{% endif %}>
+                      {{ grp.group_name }}
+                    </option>
+                    {% endfor %}
+                  </select>
+                  <script>new TomSelect('#group-select', { create: false, maxItems: 1 });</script>
+                </div>
+              </div>
+
+              <div id="card-actions" class="card sticky-top" style="top: 2rem;z-index: 5;">
+                <div class="card-body">
+                  <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary mt-3">
+                      Save Employee
+                    </button>
+                    <a href="{% url 'employee-records' %}" class="btn btn-ghost-secondary">
+                      Cancel
+                    </a>
+                  </div>
+                  <p class="text-secondary small mt-3 mb-0">
+                    You can add contact info, government IDs, and other details too after saving via Edit Details.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </form>
+
+      </div>
+    </div>
+    <script>
+      document.getElementById('addEmployeeForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const form = this;
+        const data = new FormData(form);
+
+        fetch(form.action, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': data.get('csrfmiddlewaretoken') },
+          body: data,
+        })
+        .then(res => res.json())
+        .then(json => {
+          if (json.success) {
+            alert(json.message);
+            window.location.href = "{% url 'employee-records' %}";
+          } else {
+            const errorList = Object.values(json.errors).join('\n');
+            alert('Please fix the following errors:\n\n' + errorList);
+          }
+        })
+        .catch(() => {
+          alert('An unexpected error occurred. Please try again.');
+        });
+      });
+    </script>
+    <script src="{% static 'js/tours/employees.js' %}"></script>
+{% endblock %}

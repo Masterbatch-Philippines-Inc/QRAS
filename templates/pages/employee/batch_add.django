@@ -1,0 +1,426 @@
+{% extends 'base.django' %}
+{% load static %}
+{% block content %}
+    <div class="page-wrapper">
+      <div class="container-xl mt-5">
+
+        <div class="d-flex align-items-center justify-content-between" style="margin-bottom:.35rem;">
+          <h2 class="mb-0">Add Employees by Batch</h2>
+          <button id="batch-btn-help-tour" class="btn btn-sm btn-ghost-secondary" title="Batch Import page tour">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            &nbsp;Need Help
+          </button>
+        </div>
+        <ol class="breadcrumb text-secondary" aria-label="breadcrumbs" style="margin: 0 0 1rem 0;">
+          <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'employee-records' %}">Employee Records</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Batch Add</li>
+        </ol>
+
+        <!-- ════════════════════════════════════════
+            STEP 1 — Upload
+        ════════════════════════════════════════ -->
+        <div id="step-upload">
+          <div class="row">
+
+            <!-- Upload card -->
+            <div class="col-lg-7">
+              <div class="card mb-3">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    <i class="ti ti-table-import me-2"></i>Upload Employee File
+                  </h3>
+                </div>
+                <div class="card-body">
+                  <p class="text-secondary mb-3">
+                    Upload an <strong>.xlsx</strong> file with employee data. Each row will be validated before anything is saved to the database.
+                  </p>
+
+                  <a href="{% url 'batch-add-template' %}" class="btn btn-sm btn-outline-primary mb-4">
+                    <i class="ti ti-download me-1"></i>Download Excel Template
+                  </a>
+
+                  <!-- Drop zone -->
+                  <div id="drop-zone"
+                      class="border rounded p-5 text-center mb-3"
+                      style="border-style: dashed !important; cursor: pointer; transition: background 0.15s;">
+                    <i class="ti ti-file-spreadsheet text-muted" style="font-size: 2.8rem;"></i>
+                    <div class="mt-2 text-secondary">
+                      Drag & drop your <code>.xlsx</code> file here, or
+                      <span class="text-primary" id="browse-link" style="cursor:pointer; text-decoration:underline;">browse</span>
+                    </div>
+                    <div id="file-label" class="mt-2 fw-medium text-body" style="display:none;"></div>
+                    <input type="file" id="file-input" accept=".xlsx" style="display:none;">
+                  </div>
+
+                  <div id="upload-error" class="alert alert-danger mb-3" style="display:none;"></div>
+
+                  <div class="d-grid">
+                    <button id="btn-parse" class="btn btn-primary" disabled>
+                      <i class="ti ti-search me-1"></i>Parse & Preview
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Column guide -->
+            <div class="col-lg-5">
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title"><i class="ti ti-info-circle me-2"></i>Expected Columns</h3>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-sm table-vcenter">
+                    <thead>
+                      <tr>
+                        <th>Column name</th>
+                        <th></th>
+                        <th>Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><code>employee_id</code></td>
+                        <td><span class="badge bg-red-lt text-red">Required</span></td>
+                        <td class="text-secondary small">Unique number e.g. 10001</td>
+                      </tr>
+                      <tr>
+                        <td><code>first_name</code></td>
+                        <td><span class="badge bg-red-lt text-red">Required</span></td>
+                        <td></td>
+                      </tr>
+                      <tr>
+                        <td><code>last_name</code></td>
+                        <td><span class="badge bg-red-lt text-red">Required</span></td>
+                        <td></td>
+                      </tr>
+                      <tr>
+                        <td><code>middle_name</code></td>
+                        <td><span class="badge bg-secondary-lt text-secondary">Optional</span></td>
+                        <td></td>
+                      </tr>
+                      <tr>
+                        <td><code>suffix_name</code></td>
+                        <td><span class="badge bg-secondary-lt text-secondary">Optional</span></td>
+                        <td class="text-secondary small">Jr., III, etc.</td>
+                      </tr>
+                      <tr>
+                        <td><code>department</code></td>
+                        <td><span class="badge bg-secondary-lt text-secondary">Optional</span></td>
+                        <td class="text-secondary small">Must match a department in the system</td>
+                      </tr>
+                      <tr>
+                        <td><code>position</code></td>
+                        <td><span class="badge bg-secondary-lt text-secondary">Optional</span></td>
+                        <td class="text-secondary small">Must match a position in the system</td>
+                      </tr>
+                      <tr>
+                        <td><code>hire_date</code></td>
+                        <td><span class="badge bg-secondary-lt text-secondary">Optional</span></td>
+                        <td class="text-secondary small">YYYY-MM-DD</td>
+                      </tr>
+                      <tr>
+                        <td><code>date_regularized</code></td>
+                        <td><span class="badge bg-secondary-lt text-secondary">Optional</span></td>
+                        <td class="text-secondary small">YYYY-MM-DD</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div><!-- /step-upload -->
+
+
+        <!-- ════════════════════════════════════════
+            STEP 2 — Preview & Confirm
+        ════════════════════════════════════════ -->
+        <div id="step-preview" style="display:none;">
+
+          <!-- Summary stats -->
+          <div class="row g-3 mb-3">
+            <div class="col-sm-4">
+              <div class="card card-sm">
+                <div class="card-body">
+                  <div class="d-flex align-items-center">
+                    <span class="avatar bg-success me-3"><i class="ti ti-check"></i></span>
+                    <div>
+                      <div class="fs-4 fw-bold" id="count-valid">0</div>
+                      <div class="text-secondary">Valid rows</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-sm-4">
+              <div class="card card-sm">
+                <div class="card-body">
+                  <div class="d-flex align-items-center">
+                    <span class="avatar bg-warning me-3"><i class="ti ti-alert-triangle"></i></span>
+                    <div>
+                      <div class="fs-4 fw-bold" id="count-warning">0</div>
+                      <div class="text-secondary">With warnings</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-sm-4">
+              <div class="card card-sm">
+                <div class="card-body">
+                  <div class="d-flex align-items-center">
+                    <span class="avatar bg-danger me-3"><i class="ti ti-x"></i></span>
+                    <div>
+                      <div class="fs-4 fw-bold" id="count-error">0</div>
+                      <div class="text-secondary">Errors — will skip</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="alert-warning" class="alert alert-warning" style="display:none;">
+            <i class="ti ti-alert-triangle me-2"></i>
+            Rows marked <strong>Warning</strong> will still be imported, but some fields may be left blank. Review the Issues column below.
+          </div>
+          <div id="alert-error" class="alert alert-danger" style="display:none;">
+            <i class="ti ti-circle-x me-2"></i>
+            Rows marked <strong>Error</strong> will be <strong>skipped</strong>. Fix them in your file and re-upload if needed.
+          </div>
+
+          <!-- Preview table -->
+          <div class="card mb-3">
+            <div class="card-header">
+              <h3 class="card-title">Preview</h3>
+              <div class="card-options text-secondary small" id="preview-filename"></div>
+            </div>
+            <div class="table-responsive" style="max-height:520px; overflow-y:auto;">
+              <table class="table table-vcenter table-sm card-table">
+                <thead style="position:sticky; top:0; z-index:1; background:var(--tblr-card-bg, #fff);">
+                  <tr>
+                    <th style="width:44px;">#</th>
+                    <th style="width:90px;">Status</th>
+                    <th>Emp ID</th>
+                    <th>Last Name</th>
+                    <th>First Name</th>
+                    <th>Middle</th>
+                    <th>Suffix</th>
+                    <th>Department</th>
+                    <th>Position</th>
+                    <th>Hire Date</th>
+                    <th>Regularized</th>
+                    <th>Issues</th>
+                  </tr>
+                </thead>
+                <tbody id="preview-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="d-flex gap-2 justify-content-end mb-5">
+            <button id="btn-back" class="btn btn-ghost-secondary">
+              <i class="ti ti-arrow-left me-1"></i>Back
+            </button>
+            <button id="btn-confirm" class="btn btn-success" disabled>
+              <i class="ti ti-database-import me-1"></i>
+              <span id="confirm-label">Confirm Import</span>
+            </button>
+          </div>
+
+        </div><!-- /step-preview -->
+
+      </div>
+    </div>
+    <script>
+      (function () {
+        const PREVIEW_URL = "{% url 'batch-add-preview' %}";
+        const CONFIRM_URL = "{% url 'batch-add-confirm' %}";
+        const RECORDS_URL = "{% url 'employee-records' %}";
+        const CSRF        = "{{ csrf_token }}";
+
+        let parsedRows   = [];
+        let selectedFile = null;
+
+        /* ── Drop zone ────────────────────────── */
+        const dropZone  = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const fileLabel = document.getElementById('file-label');
+        const btnParse  = document.getElementById('btn-parse');
+
+        document.getElementById('browse-link').addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('click', (e) => {
+          if (!e.target.closest('#browse-link')) fileInput.click();
+        });
+        dropZone.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          dropZone.style.background = 'var(--tblr-light)';
+        });
+        dropZone.addEventListener('dragleave', () => dropZone.style.background = '');
+        dropZone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          dropZone.style.background = '';
+          if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', () => {
+          if (fileInput.files[0]) setFile(fileInput.files[0]);
+        });
+
+        function setFile(f) {
+          if (!f.name.toLowerCase().endsWith('.xlsx')) {
+            showError('Only .xlsx files are accepted. Please download and use the provided template.');
+            return;
+          }
+          selectedFile = f;
+          fileLabel.textContent = f.name;
+          fileLabel.style.display = '';
+          btnParse.disabled = false;
+          document.getElementById('upload-error').style.display = 'none';
+        }
+
+        function showError(msg) {
+          const el = document.getElementById('upload-error');
+          el.textContent = msg;
+          el.style.display = '';
+        }
+
+        /* ── Parse ────────────────────────────── */
+        btnParse.addEventListener('click', async () => {
+          if (!selectedFile) return;
+          btnParse.disabled = true;
+          btnParse.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Parsing…';
+
+          const fd = new FormData();
+          fd.append('excel_file', selectedFile);
+          fd.append('csrfmiddlewaretoken', CSRF);
+
+          try {
+            const res  = await fetch(PREVIEW_URL, { method: 'POST', body: fd });
+            const data = await res.json();
+
+            if (!res.ok || data.error) {
+              showError(data.error || 'An error occurred while parsing the file.');
+              btnParse.disabled = false;
+              btnParse.innerHTML = '<i class="ti ti-search me-1"></i>Parse & Preview';
+              return;
+            }
+
+            parsedRows = data.rows;
+            renderPreview(data);
+
+          } catch {
+            showError('Network error. Please try again.');
+            btnParse.disabled = false;
+            btnParse.innerHTML = '<i class="ti ti-search me-1"></i>Parse & Preview';
+          }
+        });
+
+        /* ── Render preview ───────────────────── */
+        function renderPreview(data) {
+          document.getElementById('count-valid').textContent   = data.summary.valid;
+          document.getElementById('count-warning').textContent = data.summary.warning;
+          document.getElementById('count-error').textContent   = data.summary.error;
+          document.getElementById('alert-warning').style.display = data.summary.warning ? '' : 'none';
+          document.getElementById('alert-error').style.display   = data.summary.error   ? '' : 'none';
+          document.getElementById('preview-filename').textContent = selectedFile ? selectedFile.name : '';
+
+          const BADGE = {
+            valid:   '<span class="badge bg-success-lt text-success">Valid</span>',
+            warning: '<span class="badge bg-warning-lt text-warning">Warning</span>',
+            error:   '<span class="badge bg-danger-lt text-danger">Error</span>',
+          };
+          const ROW_CLASS = { valid: '', warning: 'table-warning', error: 'table-danger' };
+
+          const tbody = document.getElementById('preview-tbody');
+          tbody.innerHTML = '';
+
+          data.rows.forEach(r => {
+            const tr = document.createElement('tr');
+            if (ROW_CLASS[r.status]) tr.className = ROW_CLASS[r.status];
+
+            const issuesHtml = r.issues && r.issues.length
+              ? `<ul class="mb-0 ps-3 small text-danger">${r.issues.map(i => `<li>${esc(i)}</li>`).join('')}</ul>`
+              : '<span class="text-secondary">—</span>';
+
+            tr.innerHTML = `
+              <td class="text-secondary">${r.row}</td>
+              <td>${BADGE[r.status] || ''}</td>
+              <td>${esc(r.employee_id ?? '')}</td>
+              <td>${esc(r.last_name ?? '')}</td>
+              <td>${esc(r.first_name ?? '')}</td>
+              <td class="text-secondary">${esc(r.middle_name ?? '')}</td>
+              <td class="text-secondary">${esc(r.suffix_name ?? '')}</td>
+              <td>${esc(r.department_name ?? '')}</td>
+              <td>${esc(r.position_name ?? '')}</td>
+              <td>${esc(r.hire_date ?? '')}</td>
+              <td>${esc(r.date_regularized ?? '')}</td>
+              <td style="min-width:220px;">${issuesHtml}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+
+          const importable = data.summary.valid + data.summary.warning;
+          const btnConfirm = document.getElementById('btn-confirm');
+          btnConfirm.disabled = importable === 0;
+          document.getElementById('confirm-label').textContent =
+            `Confirm Import (${importable} row${importable !== 1 ? 's' : ''})`;
+
+          document.getElementById('step-upload').style.display  = 'none';
+          document.getElementById('step-preview').style.display = '';
+        }
+
+        /* ── Back ─────────────────────────────── */
+        document.getElementById('btn-back').addEventListener('click', () => {
+          document.getElementById('step-preview').style.display = 'none';
+          document.getElementById('step-upload').style.display  = '';
+          btnParse.disabled = false;
+          btnParse.innerHTML = '<i class="ti ti-search me-1"></i>Parse & Preview';
+          document.getElementById('upload-error').style.display = 'none';
+        });
+
+        /* ── Confirm ──────────────────────────── */
+        document.getElementById('btn-confirm').addEventListener('click', async () => {
+          const btn = document.getElementById('btn-confirm');
+          btn.disabled = true;
+          btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Importing…';
+
+          const toImport = parsedRows.filter(r => r.status !== 'error');
+
+          try {
+            const res  = await fetch(CONFIRM_URL, {
+              method:  'POST',
+              headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+              body:    JSON.stringify({ rows: toImport }),
+            });
+            const data = await res.json();
+
+            if (data.success) {
+              window.location.href = RECORDS_URL + '?batch_imported=' + data.created;
+            } else {
+              alert('Import failed: ' + (data.error || 'Unknown error.'));
+              btn.disabled = false;
+              btn.innerHTML = '<i class="ti ti-database-import me-1"></i><span id="confirm-label">Confirm Import</span>';
+            }
+          } catch {
+            alert('Network error. Please try again.');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="ti ti-database-import me-1"></i>Confirm Import';
+          }
+        });
+
+        function esc(s) {
+          return String(s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+      })();
+    </script>
+    <script src="{% static 'js/tours/employees.js' %}"></script>
+{% endblock %}

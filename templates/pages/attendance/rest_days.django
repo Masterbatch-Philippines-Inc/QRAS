@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+  <div class="page-wrapper">
+    <div class="container-xl mt-5">
+      <div class="d-flex align-items-center justify-content-between" style="margin-bottom:.35rem;">
+        <h2 class="mb-0">Rest Day Management</h2>
+        <button id="rest-days-help-btn" class="btn btn-sm btn-ghost-secondary" title="Employee Records page tour">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          &nbsp;Need Help
+        </button>
+      </div>
+      <ol class="breadcrumb text-secondary" style="margin: 0 0 1rem 0;">
+          <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+        <li class="breadcrumb-item active">Rest Days</li>
+      </ol>
+
+      <div class="row row-cards">
+
+        <!-- LEFT: Select + Assign -->
+        <div class="col-lg-4">
+          {% if dept_warning %}
+          <div class="alert alert-warning d-flex gap-2 align-items-center mb-3">
+            <i class="ti ti-alert-triangle flex-shrink-0"></i>
+            Your account is not assigned to a department. Contact your administrator.
+          </div>
+          {% endif %}
+          <div class="card">
+            <div class="card-header"><h3 class="card-title">Assign Rest Day</h3></div>
+            <div class="card-body">
+
+              <div class="mb-3">
+                <label class="form-label required">Employee</label>
+                <select id="emp-select" class="form-select" onchange="onEmployeeSelect(this)">
+                  <option value="">— Select employee —</option>
+                  {% for emp in employees %}
+                    <option value="{{ emp.employee_id }}"
+                            data-name="{{ emp.last_name }}, {{ emp.first_name }}"
+                            data-dept="{{ emp.department.name|default:'—' }}">
+                      {{ emp.last_name }}, {{ emp.first_name }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div id="emp-result" class="d-none mb-3">
+                <div class="d-flex align-items-center gap-3">
+                  <span class="avatar avatar-md" id="emp-avatar">--</span>
+                  <div>
+                    <div class="fw-medium" id="emp-name">—</div>
+                    <div class="text-secondary small" id="emp-dept">—</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Rest Day Date</label>
+                <input type="date" id="rest-date" class="form-control" />
+              </div>
+
+              <button class="btn btn-primary w-100" id="btn-assign" disabled>
+                <i class="ti ti-plus me-2"></i>Assign Rest Day
+              </button>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: List -->
+        <div class="col-lg-8">
+          <div class="card" id="rest-days-right-card">
+            <div class="card-header">
+              <h3 class="card-title">Assigned Rest Days</h3>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-vcenter table-bordered">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Day</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="rest-days-body">
+                  <tr>
+                    <td colspan="3" class="text-center text-secondary py-4">
+                      Look up an employee to see their rest days.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
+    let selectedEmpId = null
+
+    // ── Select ────────────────────────────────────────────────────────────────
+    function onEmployeeSelect(sel) {
+      const opt = sel.options[sel.selectedIndex]
+      if (!opt.value) {
+        selectedEmpId = null
+        document.getElementById('emp-result').classList.add('d-none')
+        document.getElementById('btn-assign').disabled = true
+        document.getElementById('rest-days-body').innerHTML =
+          '<tr><td colspan="3" class="text-center text-secondary py-4">Look up an employee to see their rest days.</td></tr>'
+        return
+      }
+      selectedEmpId = opt.value
+      const initials = opt.dataset.name.split(',').map(p => p.trim()[0]).join('').toUpperCase()
+      document.getElementById('emp-avatar').textContent = initials
+      document.getElementById('emp-name').textContent   = opt.dataset.name
+      document.getElementById('emp-dept').textContent   = opt.dataset.dept
+      document.getElementById('emp-result').classList.remove('d-none')
+      document.getElementById('btn-assign').disabled = false
+      loadRestDays()
+    }
+
+    // ── Load rest days ────────────────────────────────────────────────────────
+    function loadRestDays() {
+      fetch(`{% url 'employee-rest-days' %}?employee_id=${selectedEmpId}`)
+        .then(r => {
+          if (!r.ok) throw new Error(`Server returned ${r.status}`)
+          return r.json()
+        })
+        .then(data => {
+          if (data.error) {
+            document.getElementById('rest-days-body').innerHTML =
+              `<tr><td colspan="3" class="text-center text-danger py-4">${data.error}</td></tr>`
+            return
+          }
+          renderRestDays(data.rest_days)
+        })
+        .catch(err => {
+          document.getElementById('rest-days-body').innerHTML =
+            `<tr><td colspan="3" class="text-center text-danger py-4">Failed to load rest days.</td></tr>`
+          console.error(err)
+        })
+    }
+
+    function renderRestDays(list) {
+      const tbody = document.getElementById('rest-days-body')
+      if (!list.length) {
+        tbody.innerHTML = `<tr><td colspan="3" class="text-center text-secondary py-4">No rest days assigned.</td></tr>`
+        return
+      }
+      tbody.innerHTML = list.map(r => {
+        const d = new Date(r.date)
+        return `
+          <tr>
+            <td>${d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}</td>
+            <td>${DAYS[d.getDay()]}</td>
+            <td>
+              <button class="btn btn-sm btn-danger btn-remove" data-id="${r.id}">Remove</button>
+            </td>
+          </tr>
+        `
+      }).join('')
+    }
+
+    // ── Assign ────────────────────────────────────────────────────────────────
+    document.getElementById('btn-assign').addEventListener('click', function () {
+      const date = document.getElementById('rest-date').value
+      if (!date || !selectedEmpId) return
+
+      this.disabled  = true
+      this.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'
+
+      fetch("{% url 'employee-rest-days' %}", {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+        body:    JSON.stringify({ employee_id: selectedEmpId, date }),
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) { alert(data.error); return }
+        loadRestDays()
+      })
+      .finally(() => {
+        this.disabled  = false
+        this.innerHTML = '<i class="ti ti-plus me-2"></i>Assign Rest Day'
+      })
+    })
+
+    // ── Remove ────────────────────────────────────────────────────────────────
+    document.addEventListener('click', function (e) {
+      const btn = e.target.closest('.btn-remove')
+      if (!btn) return
+      btn.disabled  = true
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'
+
+      fetch("{% url 'employee-rest-days' %}", {
+        method:  'DELETE',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+        body:    JSON.stringify({ id: btn.dataset.id }),
+      })
+      .then(r => r.json())
+      .then(() => loadRestDays())
+    })
+
+    function getCookie(name) {
+      let v = null
+      document.cookie.split(';').forEach(c => {
+        const t = c.trim()
+        if (t.startsWith(name + '=')) v = decodeURIComponent(t.slice(name.length + 1))
+      })
+      return v
+    }
+  </script>
+    <script src="{% static 'js/tours/attendance/rest-days.js' %}"></script>
+{% endblock %}

@@ -2,7 +2,7 @@
 <ul class="navbar-nav pt-lg-3">
 
   {# ── Scanner & Employee Code — public, no auth needed ── #}
-  {% comment %} {% if not user.is_authenticated %}
+  {% comment %} {% if not user.is_authenticated %} {% endcomment %}
     <li class="nav-item {% if request.resolver_match.url_name == 'scanner' %}active{% endif %}">
       <a class="nav-link" href="{% url 'scanner' %}">
         <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -35,14 +35,14 @@
         <span class="nav-link-title">Employee Code</span>
       </a>
     </li>
-  {% endif %}
+  {% comment %} {% endif %} {% endcomment %}
 
   {% if user.is_authenticated %}
 
     {# ── Dashboard ───────────────────────────────────────── #}
     {% if user_perms.dashboard.read %}
-      <li class="nav-item {% if request.resolver_match.url_name == 'approval-records' %}active{% endif %}">
-        <a class="nav-link" href="{% url 'approval-records' %}">
+      <li class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+        <a class="nav-link" href="{% url 'dashboard' %}">
           <span class="nav-link-icon d-md-none d-lg-inline-block">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon">
               <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -145,18 +145,6 @@
             {% if user_perms.approvals_overtime.read %}
             <a class="dropdown-item {% if approval_page == 'ot_decision' %}active{% endif %}" href="{% url 'ot_decision' %}">Overtime</a>
             {% endif %}
-            {% comment %} {% if user_perms.approvals_undertime.read %}
-            <a class="dropdown-item {% if approval_page == 'ut_decision' %}active{% endif %}" href="{% url 'ut_decision' %}">Undertime</a>
-            {% endif %}
-            {% if user_perms.approvals_halfday.read %}
-            <a class="dropdown-item {% if approval_page == 'hd_decision' %}active{% endif %}" href="{% url 'hd_decision' %}">Half Days</a>
-            {% endif %}
-            {% if user_perms.approvals_leaves.read %}
-            <a class="dropdown-item {% if approval_page == 'lv-decision' %}active{% endif %}" href="{% url 'lv-decision' %}">Leaves</a>
-            {% endif %}
-            {% if user_perms.approvals_missing_logs.read %}
-            <a class="dropdown-item {% if approval_page == 'missing-logs' %}active{% endif %}" href="{% url 'missing-logs' %}">Missing Logs</a>
-            {% endif %} 
           </div>
         </li>
       {% endwith %}
@@ -215,12 +203,6 @@
             {% if user_perms.settings_manual_attendance.read %}
             <a class="dropdown-item {% if settings_page == 'manual-attendance' %}active{% endif %}" href="{% url 'manual-attendance' %}">Manual Attendance</a>
             {% endif %}
-            {% comment %} {% if user_perms.settings_smart_manual_attendance.read %}
-            <a class="dropdown-item {% if settings_page == 'scan-upload' %}active{% endif %}" href="{% url 'scan-upload' %}">Smart Manual Attendance</a>
-            {% endif %}
-            {% comment %} {% if user_perms.settings_personal_rest_days.read %}
-            <a class="dropdown-item {% if settings_page == 'rest-days-manage' %}active{% endif %}" href="{% url 'rest-days-manage' %}">Personal Rest Days</a>
-            {% endif %}
             {% if user_perms.settings_system_users.read %}
             <a class="dropdown-item {% if settings_page == 'database-sync' %}active{% endif %}" href="{% url 'database-sync' %}">Database Sync</a>
             {% endif %}
@@ -243,30 +225,7 @@
           <div class="d-none d-xl-flex flex-fill flex-column" style="min-width:0;">
             <div class="text-truncate fw-medium small">{{ user.first_name }} {{ user.last_name }}</div>
             <div class="text-secondary" style="font-size:11px;">
-              {% if user.role %}{{ user.role.name }}{% else %}---{% endif %}
-            </div>
-          </div>
-          <i class="ti ti-dots-vertical text-secondary ms-auto"></i>
-        </a>
-        <div class="dropdown-menu dropdown-menu-end">
-          <a href="{% url 'change-password' %}" class="dropdown-item">Change Password</a>
-          <div class="dropdown-divider"></div>
-          <a href="{% url 'logout' %}" class="dropdown-item text-danger">Logout</a>
-        </div>
-      </div>
-    </li>
-
-  {% endif %}{% endcomment %}
-  
-  {% if user.is_authenticated %}
-    <li class="nav-item mt-auto d-none d-lg-block pt-3 mb-3">
-      <div class="dropdown border-top pt-3">
-        <a href="#" class="nav-link d-flex align-items-center gap-2 px-2 py-1 rounded" data-bs-toggle="dropdown">
-          <span class="avatar avatar-sm">{{ user.first_name|first }}{{ user.last_name|first }}</span>
-          <div class="d-none d-xl-flex flex-fill flex-column" style="min-width:0;">
-            <div class="text-truncate fw-medium small">{{ user.first_name }} {{ user.last_name }}</div>
-            <div class="text-secondary" style="font-size:11px;">
-              System Administrator{% comment %} {% if user.role %}{{ user.role.name }}{% else %}---{% endif %} {% endcomment %}
+              {% if user.role %}{{ user.role.name }}{% else %}No Role Assigned{% endif %}
             </div>
           </div>
           <i class="ti ti-dots-vertical text-secondary ms-auto"></i>
@@ -278,6 +237,7 @@
         </div>
       </div>
     </li>
+
   {% endif %}
 
 </ul>

@@ -1,0 +1,39 @@
+{% load static %}
+{% include 'components/modals/confirmation-modal.html' %}
+<button id="confirm-modal-trigger" data-bs-toggle="modal" data-bs-target="#globalConfirmModal" style="display:none;"></button>
+
+{% include 'components/modals/att-duplication.html' %}
+{% include 'components/modals/capture.html' %}
+{% include 'components/modals/image.html' %}
+{% include 'components/modals/confirm-timeout-modal.html' %}
+
+{% include 'components/modals/add-system-user.html' %}
+{% include 'components/modals/edit-system-user.html' %}
+{% include 'components/modals/reset-pass-system-user.html' %}
+{% include 'components/modals/add-role.html' %}
+{% include 'components/modals/edit-role.html' %}
+{% include 'components/modals/role-assigned-users.html' %}
+{% include 'components/modals/confirm-admin-edit.html' %}
+
+{% include 'components/modals/att-logs.html' %}
+
+{% include 'components/modals/ot-reject.html' %}
+{% include 'components/modals/hd-reject.html' %}
+{% include 'components/modals/ut-reject.html' %}
+{% include 'components/modals/lv-reject.html' %}
+{% include 'components/modals/ml-assign.html' %}
+
+{% include 'components/modals/addEdit-schedule.html' %}
+{% include 'components/modals/unassign-sched.html' %}
+
+{% include 'components/modals/create-dept.html' %}
+{% include 'components/modals/edit-dept.html' %}
+{% include 'components/modals/create-position.html' %}
+{% include 'components/modals/edit-position.html' %}
+{% include 'components/modals/create-emp-group.html' %}
+{% include 'components/modals/edit-emp-group.html' %}
+{% include 'components/modals/unassign-group.html' %}
+{% include 'components/modals/employees-list-modal.html' %}
+
+{% include 'components/modals/edit-employee.html' %}
+{% include 'components/modals/resign-employee.html' %}

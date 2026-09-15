@@ -1,0 +1,62 @@
+{% load static %}
+  <!-- ══════════════════════════════════════════════════════════════
+      MODAL — Edit System User Role
+  ═══════════════════════════════════════════════════════════════ -->
+  <div class="modal modal-blur fade" id="editRoleModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editRoleModalTitle">Edit Role</h5>
+          <button type="button" class="btn-close" onclick="closeEditRoleModal()"></button>
+        </div>
+        <div class="modal-body">
+          <div id="editRoleError" class="alert alert-danger d-none"></div>
+          <div class="mb-3">
+            <label class="form-label required">Role Name</label>
+            <input id="editRoleName" type="text" class="form-control" />
+          </div>
+          <div class="table-responsive">
+            <table class="table table-vcenter table-bordered card-table">
+              <thead>
+                <tr>
+                  <th>Modules</th>
+                  <th class="text-center" style="width:80px;">
+                    Select All<br>
+                    <input type="checkbox" class="form-check-input mt-1" id="colAll_all"
+                      onchange="['create','read','update','delete'].forEach(a => { document.getElementById('colAll_'+a).checked = this.checked; toggleColumn(a, this.checked); })">
+                  </th>
+                  <th class="text-center" style="width:80px;">
+                    Create<br>
+                    <input type="checkbox" class="form-check-input mt-1" id="colAll_create" onchange="toggleColumn('create', this.checked)">
+                  </th>
+                  <th class="text-center" style="width:80px;">
+                    Read<br>
+                    <input type="checkbox" class="form-check-input mt-1" id="colAll_read" onchange="toggleColumn('read', this.checked)">
+                  </th>
+                  <th class="text-center" style="width:80px;">
+                    Update<br>
+                    <input type="checkbox" class="form-check-input mt-1" id="colAll_update" onchange="toggleColumn('update', this.checked)">
+                  </th>
+                  <th class="text-center" style="width:80px;">
+                    Delete<br>
+                    <input type="checkbox" class="form-check-input mt-1" id="colAll_delete" onchange="toggleColumn('delete', this.checked)">
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="editRoleBody">
+                <tr>
+                  <td colspan="6" class="text-center text-secondary py-4">Select a role to edit.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost-secondary me-auto" onclick="closeEditRoleModal()">Cancel</button>
+          <button type="button" class="btn btn-primary" id="editRoleBtn" onclick="confirmAndSubmitEditRole()">
+            Update Permissions
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>

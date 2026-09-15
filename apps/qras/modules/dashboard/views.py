@@ -18,7 +18,7 @@ from apps.qras.models.attendance import (
     HalfdayRequest,
     MissingLog
 )
-from apps.qras.models.management import (
+from apps.qras.models.schedules import (
     ShiftSchedule,
     ScheduleActivityLog
 )

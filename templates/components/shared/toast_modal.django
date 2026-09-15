@@ -1,0 +1,93 @@
+{% load static %}
+  {% comment %} 
+  <div class="position-fixed bottom-0 end-0 p-3 d-flex flex-column gap-2" style="z-index: 1089;">
+    <button onclick="showToastModal('Record saved successfully.', 'success')" class="btn btn-success btn-sm">Toast Success</button>
+    <button onclick="showToastModal('Something went wrong.', 'danger')"       class="btn btn-danger btn-sm">Toast Danger</button>
+    <button onclick="showToastModal('Please review this entry.', 'warning')"  class="btn btn-warning btn-sm">Toast Warning</button>
+    <button onclick="showToastModal('Flagged for approval.', 'info')"         class="btn btn-info btn-sm">Toast Info</button>
+  </div>
+  {% endcomment %}
+  <div class="modal modal-blur fade" id="appConfirmModal" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+      <div class="modal-content overflow-hidden">
+        <div class="modal-body text-center py-4">
+          <span id="confirmModalIcon" class="d-inline-flex align-items-center justify-content-center mb-3" style="width:56px;height:56px;border-radius:50%;"></span>
+          <p id="confirmModalMessage" class="fw-bold mb-0"></p>
+        </div>
+        <div class="progress rounded-0" style="height:4px;">
+          <div id="confirmModalProgress" class="progress-bar" role="progressbar" style="width:100%;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let _confirmModalTimer     = null;
+    let _confirmModalRAF       = null;
+    let _confirmModalInstance  = null;
+
+    function showToastModal(message, type = 'success', duration = 2500) {
+      const typeMap = {
+        success: {
+          icon: `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8.56 3.69a9 9 0 0 0 -2.92 1.95"/><path d="M3.69 8.56a9 9 0 0 0 -.69 3.44"/><path d="M3.69 15.44a9 9 0 0 0 1.95 2.92"/><path d="M8.56 20.31a9 9 0 0 0 3.44 .69"/><path d="M15.44 20.31a9 9 0 0 0 2.92 -1.95"/><path d="M20.31 15.44a9 9 0 0 0 .69 -3.44"/><path d="M20.31 8.56a9 9 0 0 0 -1.95 -2.92"/><path d="M15.44 3.69a9 9 0 0 0 -3.44 -.69"/><path d="M9 12l2 2l4 -4"/></svg>`,
+          textClass: 'text-success', bgClass: 'bg-success-lt', barClass: 'bg-success',
+        },
+        danger: {
+          icon: `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/><path d="M10 10l4 4m0 -4l-4 4"/></svg>`,
+          textClass: 'text-danger', bgClass: 'bg-danger-lt', barClass: 'bg-danger',
+        },
+        warning: {
+          icon: `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 9v4"/><path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0"/><path d="M12 16h.01"/></svg>`,
+          textClass: 'text-warning', bgClass: 'bg-warning-lt', barClass: 'bg-warning',
+        },
+        info: {
+          icon: `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"/><path d="M12 9h.01"/><path d="M11 12h1v4h1"/></svg>`,
+          textClass: 'text-info', bgClass: 'bg-info-lt', barClass: 'bg-info',
+        },
+      };
+
+      const cfg   = typeMap[type] ?? typeMap.success;
+      const modal = document.getElementById('appConfirmModal');
+      const icon  = document.getElementById('confirmModalIcon');
+      const body  = document.getElementById('confirmModalMessage');
+      const bar   = document.getElementById('confirmModalProgress');
+
+      // reset classes
+      icon.classList.remove('bg-success-lt', 'bg-danger-lt', 'bg-warning-lt', 'bg-info-lt',
+                            'text-success', 'text-danger', 'text-warning', 'text-info');
+      body.classList.remove('text-success', 'text-danger', 'text-warning', 'text-info');
+      bar.classList.remove('bg-success', 'bg-danger', 'bg-warning', 'bg-info');
+
+      icon.classList.add(cfg.bgClass, cfg.textClass);
+      body.classList.add(cfg.textClass);
+      bar.classList.add(cfg.barClass);
+      icon.innerHTML   = cfg.icon;
+      body.textContent = message;
+
+      // clear any previous timers/animation still running
+      clearTimeout(_confirmModalTimer);
+      cancelAnimationFrame(_confirmModalRAF);
+
+      if (!_confirmModalInstance) {
+        _confirmModalInstance = tabler.Modal.getOrCreateInstance(modal);
+      }
+
+      bar.style.width = '100%';
+      _confirmModalInstance.show();
+
+      const start = performance.now();
+      function tick(now) {
+        const elapsed  = now - start;
+        const remaining = Math.max(0, 1 - elapsed / duration);
+        bar.style.width = (remaining * 100) + '%';
+        if (elapsed < duration) {
+          _confirmModalRAF = requestAnimationFrame(tick);
+        }
+      }
+      _confirmModalRAF = requestAnimationFrame(tick);
+
+      _confirmModalTimer = setTimeout(() => {
+        _confirmModalInstance.hide();
+      }, duration);
+    }
+  </script>

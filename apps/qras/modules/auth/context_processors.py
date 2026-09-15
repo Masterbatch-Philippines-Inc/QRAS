@@ -1,5 +1,5 @@
-from qras.modules.features.clock_offset.utils import get_clock_offset
-from qras.models.access import Module
+from apps.qras.modules.features.clock_offset.utils import get_clock_offset
+from apps.qras.models.access import Module
 
 
 def user_permissions(request):
@@ -10,7 +10,7 @@ def user_permissions(request):
     if not role:
         return {'user_perms': {}}
 
-    if role.name == 'Admin':
+    if role.name == 'Administrator':
         perms = {
             m.code: {'create': True, 'read': True, 'update': True, 'delete': True}
             for m in Module.objects.all()

@@ -1,0 +1,522 @@
+{% extends 'base.django' %}
+{% load static %}
+{% block content %}
+  <div id="pageAlert" class="alert d-none mb-3" role="alert"></div>
+  <div class="page-wrapper">
+    <div class="container-xl mt-5">
+      <div class="d-flex align-items-center justify-content-between" style="margin-bottom:.35rem;">
+        <h2 class="mb-0">Settings</h2>
+        <button id="tours-roles-help-btn" class="btn btn-sm btn-ghost-secondary" title="Employee Records page tour">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          &nbsp;Need Help
+        </button>
+      </div>
+      <ol class="breadcrumb text-secondary" style="margin: 0 0 1rem 0;">
+          <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Roles</li>
+      </ol>
+      <div class="card">
+        <div class="card-table">
+          <div class="card-header">
+            <div class="row w-full align-items-center">
+              <div class="col">
+                <h3 class="card-title mb-0">System Roles</h3>
+                <p class="text-secondary m-0">Manage roles and their module permissions.</p>
+              </div>
+              <div class="col-md-auto col-sm-12">
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                  <div class="input-group input-group-flat w-auto">
+                    <span class="input-group-text">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/>
+                      </svg>
+                    </span>
+                    <input id="roles-search" type="text" class="form-control" autocomplete="off" placeholder="Search…" />
+                  </div>
+                  <form method="GET" class="d-flex gap-2 align-items-center mb-0">
+                    <label class="form-check form-switch mb-0"
+                           data-bs-toggle="tooltip" data-bs-placement="top"
+                           title="Toggle to include deactivated roles">
+                      <input class="form-check-input" type="checkbox" name="show_inactive" value="true"
+                             {% if show_inactive %}checked{% endif %}
+                             onchange="this.form.submit()">
+                    </label>
+                  </form>
+                  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRoleModal">
+                    Add Role
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-vcenter table-hover card-table" id="tours-roles-rec">
+            <thead>
+              <tr>
+                <th>Role Name</th>
+                <th>Assigned Users</th>
+                {% if show_inactive %}<th>Status</th>{% endif %}
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for role in roles %}
+              <tr class="roles-row">
+                <td class="fw-medium">{{ role.name }}</td>
+                <td>
+                  {% with count=role.users.count %}
+                  {% if count > 0 %}
+                  <a href="#" class="text-primary"
+                     data-pk="{{ role.pk }}"
+                     data-users-url="{% url 'role-users' role.pk %}"
+                     data-bs-toggle="modal"
+                     data-bs-target="#roleUsersModal"
+                     onclick="loadRoleUsers(this)">
+                    {{ count }} user{{ count|pluralize }}
+                  </a>
+                  {% else %}
+                  <span class="text-secondary">0 users</span>
+                  {% endif %}
+                  {% endwith %}
+                </td>
+                {% if show_inactive %}
+                <td>
+                  {% if role.is_active %}
+                    <span class="badge bg-green-lt">Active</span>
+                  {% else %}
+                    <span class="badge bg-red-lt">Inactive</span>
+                  {% endif %}
+                </td>
+                {% endif %}
+                <td>
+                  <div class="d-flex gap-1">
+                    {% if role.name != 'Administrator' %}
+                    <button class="btn btn-sm btn-toggle-role {% if role.is_active %}btn-ghost-danger{% else %}btn-ghost-success{% endif %}"
+                            data-pk="{{ role.pk }}"
+                            data-name="{{ role.name }}"
+                            data-active="{% if role.is_active %}1{% else %}0{% endif %}"
+                            data-deactivate-url="{% url 'role-deactivate' role.pk %}"
+                            data-reactivate-url="{% url 'role-reactivate' %}">
+                      {% if role.is_active %}Deactivate{% else %}Restore{% endif %}
+                    </button>
+                    {% if role.is_active %}
+                    <button class="btn btn-sm btn-primary edit-roles-btn"
+                            data-pk="{{ role.pk }}"
+                            data-name="{{ role.name }}"
+                            data-update-url="{% url 'role-update' role.pk %}"
+                            onclick="loadRolePermissions(this)">
+                      Edit
+                    </button>
+                    {% endif %}
+                    {% else %}
+                    <button class="btn btn-sm btn-primary edit-roles-btn"
+                            data-pk="{{ role.pk }}"
+                            data-name="{{ role.name }}"
+                            data-update-url="{% url 'role-update' role.pk %}"
+                            onclick="loadRolePermissions(this)">
+                      Edit
+                    </button>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr class="tc-django-empty">
+                <td colspan="4" class="text-center text-secondary py-5">
+                  No roles found.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="card-footer d-flex align-items-center">
+          <div class="dropdown clzst">
+            <a class="btn dropdown-toggle" data-bs-toggle="dropdown">
+              <span id="roles-page-count" class="me-1">8</span> records
+            </a>
+            <div class="dropdown-menu">
+              <a class="dropdown-item" onclick="setRolePageSize(8)">8 records</a>
+              <a class="dropdown-item" onclick="setRolePageSize(20)">20 records</a>
+              <a class="dropdown-item" onclick="setRolePageSize(50)">50 records</a>
+            </div>
+          </div>
+          <ul class="pagination m-0 ms-auto" id="roles-pagination"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+{% block scripts %}
+<script>
+  function getCSRF() {
+    for (let c of document.cookie.split(';')) {
+      c = c.trim();
+      if (c.startsWith('csrftoken=')) return c.substring('csrftoken='.length);
+    }
+    return '';
+  }
+  
+  function submitAdminEditConfirm() {
+    const btn      = document.getElementById('adminEditConfirmBtn');
+    const err      = document.getElementById('adminEditConfirmError');
+    const password = document.getElementById('adminEditConfirmPassword').value;
+    err.classList.add('d-none');
+
+    if (!password) {
+      err.textContent = 'Password is required.';
+      err.classList.remove('d-none');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Verifying…';
+
+    fetch("{% url 'check-password' %}", {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': getCSRF() },
+      body:    new URLSearchParams({ password })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.status === 'ok') {
+        tabler.Modal.getInstance(document.getElementById('adminEditConfirmModal')).hide();
+        document.getElementById('adminEditConfirmModal').addEventListener('hidden.bs.modal', function onHidden() {
+          this.removeEventListener('hidden.bs.modal', onHidden);
+          _editRoleUrl = _pendingEditBtn.dataset.updateUrl;
+          loadRolePermissions._proceed(_pendingEditBtn);
+          tabler.Modal.getOrCreateInstance(document.getElementById('editRoleModal')).show();
+        });
+      } else {
+        err.textContent = data.message;
+        err.classList.remove('d-none');
+        btn.disabled = false;
+        btn.innerHTML = 'Confirm &amp; Edit';
+      }
+    })
+    .catch(() => {
+      err.textContent = 'Something went wrong.';
+      err.classList.remove('d-none');
+      btn.disabled = false;
+      btn.innerHTML = 'Confirm &amp; Edit';
+    });
+  }
+
+  // ── Add Role ────────────────────────────────────────────────
+  function submitCreateRole() {
+    const btn = document.getElementById('addRoleBtn');
+    const err = document.getElementById('addRoleError');
+    err.classList.add('d-none');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving…';
+
+    fetch("{% url 'role-create' %}", {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': getCSRF() },
+      body:    new URLSearchParams({ name: document.getElementById('addRoleName').value.trim() })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.status === 'created') {
+        document.querySelector('#addRoleModal [data-bs-dismiss="modal"]').click();
+        setTimeout(() => location.reload(), 800);
+      } else {
+        err.textContent = data.message;
+        err.classList.remove('d-none');
+        btn.disabled = false;
+        btn.innerHTML = 'Save';
+      }
+    })
+    .catch(() => {
+      err.textContent = 'Something went wrong.';
+      err.classList.remove('d-none');
+      btn.disabled = false;
+      btn.innerHTML = 'Save';
+    });
+  }
+
+  document.getElementById('addRoleModal').addEventListener('hidden.bs.modal', function () {
+    document.getElementById('addRoleName').value = '';
+    document.getElementById('addRoleError').classList.add('d-none');
+    const btn = document.getElementById('addRoleBtn');
+    btn.disabled = false;
+    btn.innerHTML = 'Save';
+  });
+
+  document.getElementById('editRoleModal').addEventListener('hidden.bs.modal', function () {
+    document.getElementById('editRoleName').value = '';
+    document.getElementById('editRoleName').readOnly = false;
+    document.getElementById('editRoleName').classList.remove('text-secondary');
+    document.getElementById('editRoleBtn').disabled = false;
+    document.getElementById('editRoleBtn').innerHTML = 'Update Permissions';
+    const err = document.getElementById('editRoleError');
+    err.className = 'alert alert-danger d-none';
+    err.textContent = '';
+  });
+
+  document.getElementById('adminEditConfirmModal').addEventListener('hidden.bs.modal', function () {
+    document.getElementById('adminEditConfirmPassword').value = '';
+    document.getElementById('adminEditConfirmError').classList.add('d-none');
+    document.getElementById('adminEditConfirmBtn').disabled = false;
+    document.getElementById('adminEditConfirmBtn').innerHTML = 'Confirm &amp; Edit';
+  });
+  // ── Edit Role — load permissions ─────────────────────────────
+  let _editRoleUrl = '';
+  let _pendingEditBtn = null;
+
+  loadRolePermissions._proceed = function(btn) {
+    document.getElementById('editRoleError').classList.add('d-none');
+    document.getElementById('editRoleBody').innerHTML =
+      '<tr><td colspan="6" class="text-center py-4"><span class="spinner-border spinner-border-sm"></span> Loading…</td></tr>';
+
+    fetch(_editRoleUrl)
+      .then(r => r.json())
+      .then(data => {
+        if (data.status !== 'ok') return;
+        document.getElementById('editRoleModalTitle').textContent = `Editing "${data.role.name}" Permissions`;
+        document.getElementById('editRoleName').value = data.role.name;
+        document.getElementById('editRoleName').disabled = false;
+
+        const tbody = document.getElementById('editRoleBody');
+        tbody.innerHTML = '';
+        data.modules.forEach(m => {
+          tbody.innerHTML += `
+            <tr>
+              <td>${m.module_name}</td>
+              <td class="text-center">
+                <input type="checkbox" class="form-check-input row-all"
+                  data-mid="${m.module_id}"
+                  ${(m.can_create && m.can_read && m.can_update && m.can_delete) ? 'checked' : ''}
+                  onchange="toggleRow(this)">
+              </td>
+              <td class="text-center"><input type="checkbox" class="form-check-input perm-cb" data-mid="${m.module_id}" data-action="create" ${m.can_create ? 'checked' : ''} onchange="syncRowAll(${m.module_id})"></td>
+              <td class="text-center"><input type="checkbox" class="form-check-input perm-cb" data-mid="${m.module_id}" data-action="read"   ${m.can_read   ? 'checked' : ''} onchange="syncRowAll(${m.module_id})"></td>
+              <td class="text-center"><input type="checkbox" class="form-check-input perm-cb" data-mid="${m.module_id}" data-action="update" ${m.can_update ? 'checked' : ''} onchange="syncRowAll(${m.module_id})"></td>
+              <td class="text-center"><input type="checkbox" class="form-check-input perm-cb" data-mid="${m.module_id}" data-action="delete" ${m.can_delete ? 'checked' : ''} onchange="syncRowAll(${m.module_id})"></td>
+            </tr>`;
+        });
+        syncAllColumnHeaders();
+      });
+  };
+
+  function closeAdminConfirmModal() {
+    tabler.Modal.getInstance(document.getElementById('adminEditConfirmModal'))?.hide();
+  }
+
+  function closeEditRoleModal() {
+    tabler.Modal.getInstance(document.getElementById('editRoleModal'))?.hide();
+  }
+
+  function loadRolePermissions(btn) {
+    if (btn.dataset.name === 'Administrator') {
+      _pendingEditBtn = btn;
+      document.getElementById('adminEditConfirmPassword').value = '';
+      document.getElementById('adminEditConfirmError').classList.add('d-none');
+      document.getElementById('adminEditConfirmBtn').disabled = false;
+      document.getElementById('adminEditConfirmBtn').innerHTML = 'Confirm &amp; Edit';
+      tabler.Modal.getOrCreateInstance(document.getElementById('adminEditConfirmModal')).show();
+      return;
+    }
+    _editRoleUrl = btn.dataset.updateUrl;
+    loadRolePermissions._proceed(btn);
+    tabler.Modal.getOrCreateInstance(document.getElementById('editRoleModal')).show();
+  }
+
+  function toggleRow(masterCb) {
+    const mid     = masterCb.dataset.mid;
+    const checked = masterCb.checked;
+    document.querySelectorAll(`.perm-cb[data-mid="${mid}"]`).forEach(cb => cb.checked = checked);
+    syncAllColumnHeaders();
+  }
+
+  function syncRowAll(mid) {
+    const cbs     = document.querySelectorAll(`.perm-cb[data-mid="${mid}"]`);
+    const allOn   = [...cbs].every(cb => cb.checked);
+    const rowAll  = document.querySelector(`.row-all[data-mid="${mid}"]`);
+    if (rowAll) rowAll.checked = allOn;
+    syncAllColumnHeaders();
+  }
+
+  function syncAllColumnHeaders() {
+    ['create','read','update','delete'].forEach(action => {
+      const cbs    = document.querySelectorAll(`.perm-cb[data-action="${action}"]`);
+      const allOn  = cbs.length > 0 && [...cbs].every(cb => cb.checked);
+      const header = document.getElementById(`colAll_${action}`);
+      if (header) header.checked = allOn;
+    });
+  }
+
+  function toggleColumn(action, checked) {
+    document.querySelectorAll(`.perm-cb[data-action="${action}"]`).forEach(cb => {
+      if (!cb.disabled) cb.checked = checked;
+    });
+    document.querySelectorAll('.row-all').forEach(ra => syncRowAll(ra.dataset.mid));
+  }
+
+  function confirmAndSubmitEditRole() {
+    if (!confirm('Are you sure you want to update these permissions? This will take effect immediately for all users assigned to this role.')) return;
+    submitEditRole();
+  }
+
+  function submitEditRole() {
+    const btn = document.getElementById('editRoleBtn');
+    const err = document.getElementById('editRoleError');
+    err.classList.add('d-none');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving…';
+
+    const params = new URLSearchParams();
+    params.append('name', document.getElementById('editRoleName').value.trim());
+    document.querySelectorAll('.perm-cb').forEach(cb => {
+      params.append(`m_${cb.dataset.mid}_${cb.dataset.action}`, cb.checked ? '1' : '0');
+    });
+
+    fetch(_editRoleUrl, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': getCSRF() },
+      body:    params
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.status === 'updated') {
+        closeEditRoleModal();
+        setTimeout(() => location.reload(), 800);
+      } else {
+        err.textContent = data.message;
+        err.classList.remove('d-none');
+        btn.disabled = false;
+        btn.innerHTML = 'Update Permissions';
+      }
+    })
+    .catch(() => {
+      err.textContent = 'Something went wrong.';
+      err.classList.remove('d-none');
+      btn.disabled = false;
+      btn.innerHTML = 'Update Permissions';
+    });
+  }
+
+  // ── Assigned Users modal ─────────────────────────────────────
+  let _usersRoleUrl = '';
+
+  function loadRoleUsers(btn) {
+    _usersRoleUrl = btn.dataset.usersUrl;
+    document.getElementById('roleUsersError').classList.add('d-none');
+    document.getElementById('roleUsersBody').innerHTML =
+      '<tr><td colspan="3" class="text-center py-4"><span class="spinner-border spinner-border-sm"></span> Loading…</td></tr>';
+    document.getElementById('roleUsersTitle').textContent = 'Assigned Users';
+    document.getElementById('roleUsersSelectAll').checked = false;
+
+    fetch(_usersRoleUrl)
+      .then(r => r.json())
+      .then(data => {
+        if (data.status !== 'ok') return;
+        document.getElementById('roleUsersTitle').textContent = `Assigned Users — ${data.role.name}`;
+        const tbody = document.getElementById('roleUsersBody');
+        tbody.innerHTML = '';
+        if (data.users.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="3" class="text-center text-secondary py-4">No active users found.</td></tr>';
+          return;
+        }
+        data.users.forEach(u => {
+          tbody.innerHTML += `
+            <tr>
+              <td>${u.name}</td>
+              <td class="text-secondary">${u.assigned_as}</td>
+              <td class="text-center">
+                <input type="checkbox" class="form-check-input user-assign-cb" value="${u.pk}" ${u.in_role ? 'checked' : ''}>
+              </td>
+            </tr>`;
+        });
+      });
+  }
+
+  document.getElementById('roleUsersSelectAll').addEventListener('change', function () {
+    document.querySelectorAll('.user-assign-cb').forEach(cb => cb.checked = this.checked);
+  });
+
+  function submitRoleUsers() {
+    const btn = document.getElementById('roleUsersBtn');
+    const err = document.getElementById('roleUsersError');
+    err.classList.add('d-none');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving…';
+
+    const params = new URLSearchParams();
+    document.querySelectorAll('.user-assign-cb:checked').forEach(cb => params.append('user_ids', cb.value));
+
+    fetch(_usersRoleUrl, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': getCSRF() },
+      body:    params
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.status === 'updated') {
+        document.querySelector('#roleUsersModal [data-bs-dismiss="modal"]').click();
+        setTimeout(() => location.reload(), 800);
+      } else {
+        err.textContent = data.message;
+        err.classList.remove('d-none');
+        btn.disabled = false;
+        btn.innerHTML = 'Update Assigned Users';
+      }
+    })
+    .catch(() => {
+      err.textContent = 'Something went wrong.';
+      err.classList.remove('d-none');
+      btn.disabled = false;
+      btn.innerHTML = 'Update Assigned Users';
+    });
+  }
+
+  // ── Deactivate / Restore ─────────────────────────────────────
+  document.querySelectorAll('.btn-toggle-role').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const isActive = btn.dataset.active === '1';
+      const label    = isActive ? 'deactivate' : 'restore';
+      if (!confirm(`Are you sure you want to ${label} the "${btn.dataset.name}" role?`)) return;
+
+      if (isActive) {
+        const res  = await fetch(btn.dataset.deactivateUrl, {
+          method: 'POST', headers: { 'X-CSRFToken': getCSRF() }
+        });
+        const data = await res.json();
+        if (data.status === 'deactivated') { location.reload(); }
+        else alert(data.message);
+      } else {
+        const params = new URLSearchParams();
+        params.append('role_ids', btn.dataset.pk);
+        const res  = await fetch(btn.dataset.reactivateUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': getCSRF() },
+          body:   params
+        });
+        const data = await res.json();
+        if (data.status === 'reactivated') { location.reload(); }
+        else alert(data.message);
+      }
+    });
+  });
+
+</script>
+<script>
+  initTableController({
+    searchId:    'roles-search',
+    pageCountId: 'roles-page-count',
+    paginId:     'roles-pagination',
+    rowSelector: '.roles-row',
+    defaultSize: 8,
+    setFnName:   'setRolePageSize',
+  });
+</script>
+<script src="{% static 'js/tours/settings/roles.js' %}"></script>
+<script>
+  console.log(typeof tabler.Modal);
+</script>
+{% endblock %}

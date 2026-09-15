@@ -1,0 +1,167 @@
+{% load static %}
+  <!-- ═══════════════════════════════════════════
+      MODAL — Schedule
+  ═══════════════════════════════════════════ -->
+  <div class="modal modal-blur fade" id="addEditscheduleModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="scheduleModalTitle">New Schedule</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="schedule-id" />
+
+          <div class="mb-3" id="modal-sched-name">
+            <label class="form-label required">Name</label>
+            <input type="text" id="sched-name" class="form-control" placeholder="e.g. Day Shift 8-5" />
+          </div>
+
+          <div class="row g-2 mb-3" id="modal-shift-times">
+            <div class="col-6">
+              <label class="form-label required">Shift Start</label>
+              <input type="time" id="sched-shift-start" class="form-control" />
+            </div>
+            <div class="col-6">
+              <label class="form-label required">Shift End</label>
+              <input type="time" id="sched-shift-end" class="form-control" />
+            </div>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div id="sched-night-diff-info" class="alert alert-info d-none py-2 mb-3">
+              <span class="align-items-center">
+                Night differential will automatically apply from <span class="fw-bold">10pm to 6am</span> as required under the Philippine Labor Code (Art. 86).
+              </span>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <!-- ── Sched Status & Rest Days (left) ──────────────────────────────────────── -->
+            <div class="col-md-3">
+              <label class="form-label">Schedule Status</label>
+              <div class="d-flex flex-column gap-2">
+                {% if is_admin %}
+                <label class="form-check mb-0" data-bs-toggle="tooltip" data-bs-placement="top" title="Global schedules are visible to all department heads in read-only mode." id="modal-is-global">
+                  <input type="checkbox" id="sched-is-global" class="form-check-input" />
+                  <span class="form-check-label">Global Schedule</span>
+                </label>
+                {% endif %}
+                <label class="form-check mb-0" id="modal-is-active">
+                  <input type="checkbox" id="sched-is-active" class="form-check-input" checked />
+                  <span class="form-check-label">Active</span>
+                </label>
+                <label class="form-check" id="modal-crosses-midnight">
+                  <input type="checkbox" id="sched-crosses-midnight" class="form-check-input" />
+                  <span class="form-check-label">Crosses Midnight</span>
+                </label>
+              </div>
+              
+              <div id="sched-night-diff-info" class="alert alert-info d-none py-2 mb-3" style="font-size:12px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="me-1">
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                Night differential will automatically apply from <strong>10:00 PM to 6:00 AM</strong> as required under the Philippine Labor Code (Art. 86).
+              </div>
+              
+              <div class="d-flex flex-column gap-2" id="modal-rest-days">
+              <label class="form-label mt-2">Rest Days</label>
+                {% for day in "0123456" %}
+                <label class="form-check mb-0">
+                  <input type="checkbox" class="form-check-input rest-day-check" value="{{ day }}">
+                  <span class="form-check-label">
+                    {% if day == "0" %}Monday
+                    {% elif day == "1" %}Tuesday
+                    {% elif day == "2" %}Wednesday
+                    {% elif day == "3" %}Thursday
+                    {% elif day == "4" %}Friday
+                    {% elif day == "5" %}Saturday
+                    {% else %}Sunday{% endif %}
+                  </span>
+                </label>
+                {% endfor %}
+              </div>
+
+              <div class="d-flex flex-column gap-3 mt-3 pt-3">
+                <button id="sched-modal-help-tour" class="btn btn-sm btn-ghost-secondary" title="Schedule Records modal tour" style="max-width: 6rem;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                  </svg>
+                  &nbsp;Need Help
+                </button>
+              </div>
+            </div>
+            <!-- ── Specific Dates (right) ────────────────────────────────── -->
+            <div class="col-md-9" id="modal-specific-dates">
+              <label class="form-label">Specific Dates</label>
+              <!-- Quick-select shortcuts -->
+              <div class="d-flex flex-wrap gap-1 mb-2">
+                <button type="button" class="btn btn-sm btn-ghost-secondary" id="spd-today">Today</button>
+                <button type="button" class="btn btn-sm btn-ghost-secondary" id="spd-this-week">This Week</button>
+                <button type="button" class="btn btn-sm btn-ghost-secondary" id="spd-next-week">Next Week</button>
+                <button type="button" class="btn btn-sm btn-ghost-secondary" id="spd-this-month">This Month</button>
+                <button type="button" class="btn btn-sm btn-ghost-secondary" id="spd-next-month">Next Month</button>
+                <button type="button" class="btn btn-sm btn-ghost-danger ms-auto" id="spd-clear-all">Clear All</button>
+              </div>
+
+              <!-- Weekday toggles -->
+              <div class="d-flex align-items-center justify-content-between gap-1 mb-2">
+                <button type="button" class="btn btn-sm btn-ghost-secondary spd-wd-btn" data-wd="0" title="All Sundays this month">Sun</button>
+                <button type="button" class="btn btn-sm btn-ghost-secondary spd-wd-btn" data-wd="1" title="All Mondays this month">Mon</button>
+                <button type="button" class="btn btn-sm btn-ghost-secondary spd-wd-btn" data-wd="2" title="All Tuesdays this month">Tues</button>
+                <button type="button" class="btn btn-sm btn-ghost-secondary spd-wd-btn" data-wd="3" title="All Wednesdays this month">Wed</button>
+                <button type="button" class="btn btn-sm btn-ghost-secondary spd-wd-btn" data-wd="4" title="All Thursdays this month">Thurs</button>
+                <button type="button" class="btn btn-sm btn-ghost-secondary spd-wd-btn" data-wd="5" title="All Fridays this month">Fri</button>
+                <button type="button" class="btn btn-sm btn-ghost-secondary spd-wd-btn" data-wd="6" title="All Saturdays this month">Sat</button>
+              </div>
+
+              <!-- Inline calendar -->
+              <div class="border rounded p-2 mb-2" id="spd-cal-wrap" data-bs-toggle="tooltip" data-bs-placement="right" title="Schedule also applies on selected dates">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                  <button type="button" class="btn btn-sm btn-ghost-secondary" id="spd-cal-prev">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M15 6l-6 6l6 6" />
+                    </svg>
+                  </button>
+                  <span id="spd-cal-label" class="fw-semibold" style="font-size:13px;"></span>
+                  <button type="button" class="btn btn-sm btn-ghost-secondary" id="spd-cal-next">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M9 6l6 6l-6 6" />
+                    </svg>
+                  </button>
+                </div>
+                <div id="spd-cal-grid"></div>
+              </div>
+
+              <!-- Date range hint -->
+              <div class="mb-1 cursor-pointer">
+                <span class="text-secondary d-inline-flex align-items-center gap-1" style="font-size:12px;"
+                      data-bs-toggle="tooltip" data-bs-placement="top"
+                      title="Click a date to select it. To select a range, click a start date then Shift+Click an end date."
+                      style="cursor:default;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                  </svg>
+                  Tip: Shift+Click to select a date range
+                </span>
+              </div>
+
+              <!-- Chips output -->
+              <div id="sched-dates-list"></div>
+            </div>
+          </div>
+
+          <div id="sched-alert" class="alert d-none mt-3"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost-secondary me-auto" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="btn-save-schedule">Save Schedule</button>
+        </div>
+      </div>
+    </div>
+  </div>

@@ -1,4 +1,5 @@
-from .access import Department, Position
+from .auth import User
+from .access import Department, Position, Role, Module, RolePermission
 from .employee import (
     Employee,
     EmployeeRestDay,
@@ -9,4 +10,4 @@ from .employee import (
     EmployeeGroup,
     EmployeeGroupMembership,
 )
-from .management import ShiftSchedule
+from .schedules import ShiftSchedule

@@ -1,0 +1,23 @@
+{% load static %}
+<!--  ═══════════════════════════════════════════
+      MODAL — Scan Captures
+  ═══════════════════════════════════════════  -->
+  <button id="confirmTimeOutModalTrigger" data-bs-toggle="modal" data-bs-target="#confirmTimeOutModal" style="display:none;"></button>
+
+  <div class="modal modal-blur fade" id="confirmTimeOutModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+      <div class="modal-content">
+        <div class="modal-body text-center py-4">
+          <i class="ti ti-alert-triangle text-warning" style="font-size: 3rem;"></i>
+          <h3 class="mt-3">No Time In Found</h3>
+          <div class="text-secondary">
+            Confirm only if this <span class="fw-bold">Time Out</span> is genuine.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="confirmTimeOutCancelBtn" class="btn btn-ghost-secondary w-100" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" id="confirmTimeOutBtn" class="btn btn-danger w-100" data-bs-dismiss="modal">Confirm Time Out</button>
+        </div>
+      </div>
+    </div>
+  </div>

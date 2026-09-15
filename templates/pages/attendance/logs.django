@@ -1,0 +1,621 @@
+{% extends 'base.django' %}
+{% load static %}
+{% block content %}
+    <div class="page-wrapper">
+      {% if dept_warning %}
+      <div class="container-xl mt-4">
+        <div class="alert alert-warning d-flex gap-2 align-items-center">
+          <i class="ti ti-alert-triangle flex-shrink-0"></i>
+          Your account is not assigned to a department. Contact your administrator to get access.
+        </div>
+      </div>
+      {% endif %}
+      <div class="container-xl mt-5">
+        <div class="d-flex align-items-center justify-content-between" style="margin-bottom:.35rem;">
+          <h2 class="mb-0">Attendance</h2>
+          <button id="att-help-btn" class="btn btn-sm btn-ghost-secondary" title="Employee Records page tour">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            &nbsp;Need Help
+          </button>
+        </div>
+        <ol class="breadcrumb text-secondary" aria-label="breadcrumbs" style="margin: 0 0 1rem 0;">
+          <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Attendance Logs</li>
+        </ol>
+
+        <div class="card">
+          <div class="card-table">
+
+            <!-- ─── Header ─── -->
+            <div class="card-header">
+              <div class="row w-full">
+                <div class="col">
+                  <h3 class="card-title mb-0">Attendance Logs</h3>
+                  <p class="text-secondary m-0">Showing daily time-in/out and attendance flags per employee.</p>
+                </div>
+                <div class="col-md-auto col-sm-12">
+                  <div class="ms-auto d-flex flex-wrap btn-list">
+                    <div class="input-group input-group-flat w-auto">
+                      <span class="input-group-text">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                          fill="none" stroke="currentColor" stroke-width="2"
+                          stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/>
+                        </svg>
+                      </span>
+                      <input id="main-attendance-table" type="text" class="form-control" autocomplete="off" placeholder="Search employee…" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ─── Table ─── -->
+            <div class="table-responsive">
+              <table class="table table-vcenter table-bordered" id="attendance-table">
+                <thead>
+                  <tr>
+                    <th>Employee</th>
+                    <th>Department</th>
+                    <th>Last Record</th>
+                    <th id="att-pending-col">Statuses</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for record in records %}
+                  <tr class="cursor-pointer attendance-row"
+                      data-bs-toggle="modal"
+                      data-bs-target="#employeeAttendanceLogs"
+                      data-employee-id="{{ record.employee.employee_id }}"
+                      data-name="{{ record.employee.last_name }}, {{ record.employee.first_name }}"
+                      data-search="{{ record.employee.last_name }} {{ record.employee.first_name }} {{ record.employee.department }}"
+                      data-department="{{ record.employee.department }}"
+                      >
+
+                    <!-- Employee -->
+                    <td>
+                      <div class="fw-semibold">
+                        {{ record.employee.last_name }}, {{ record.employee.first_name }}
+                        {% if record.employee.middle_name %}{{ record.employee.middle_name }}{% endif %}
+                        {% if not record.has_schedule %}
+                          <span class="badge bg-pink-lt ms-1" style="font-size:10px;">UN</span>
+                        {% endif %}
+                      </div>
+                      <div class="text-secondary" style="font-size:12px;">
+                        {{ record.employee.position.title|default:"—" }}
+                      </div>
+                    </td>
+
+                    <!-- Department -->
+                    <td>{{ record.employee.department }}</td>
+
+                    <!-- Last recorded date -->
+                    <td>
+                    {{ record.last_date|date:"M d, Y" }}
+                    {% if record.is_regular_holiday %}
+                      <span class="badge bg-blue-lt ms-1">Regular Holiday</span>
+                    {% elif record.is_special_holiday %}
+                      <span class="badge bg-blue-lt ms-1">Special Holiday</span>
+                    {% endif %}
+                    </td>
+
+                    <!-- Attendance flags (aggregated across all logs) -->
+                    <td>
+                      {% if record.unscheduled_count or record.missing_log_count or record.undertime_count or record.halfday_count or record.overtime_count %}
+                        <div class="d-flex flex-wrap gap-1">
+                          {% if record.unscheduled_count %}
+                            <span class="fw-bold badge bg-pink-lt">
+                              Has 
+                              {% if record.unscheduled_count > 1 %}{{ record.unscheduled_count }}{% endif %}
+                              Unscheduled Logs
+                            </span>
+                          {% endif %}
+                          {% if record.missing_log_count %}
+                            <span class="fw-bold badge bg-danger-lt">
+                              Has 
+                              {% if record.missing_log_count > 1 %}{{ record.missing_log_count }}{% endif %}
+                              Missing Logs
+                            </span>
+                          {% endif %}
+                          {% if record.undertime_count %}
+                            <span class="fw-bold badge bg-warning-lt">
+                              Has 
+                              {% if record.undertime_count > 1 %}{{ record.undertime_count }}{% endif %}
+                              Undertime Logs
+                            </span>
+                          {% endif %}
+                          {% if record.halfday_count %}
+                            <span class="fw-bold badge bg-purple-lt">
+                              Has 
+                              {% if record.halfday_count > 1 %}{{ record.halfday_count }}{% endif %}
+                              Half-day Logs
+                            </span>
+                          {% endif %}
+                          {% if record.overtime_count %}
+                            <span class="fw-bold badge bg-indigo-lt">
+                              Has 
+                              {% if record.overtime_count > 1 %}{{ record.overtime_count }}{% endif %}
+                              Overtime Logs
+                            </span>
+                          {% endif %}
+                        </div>
+                      {% else %}
+                          <span class="fw-bold badge bg-success-lt">Normal Logs</span>
+                        {% endif %}
+                        {# Hidden keywords for URL-based filtering — read by table.js textContent search #}
+                        <span class="d-none" aria-hidden="true">
+                          {% if record.missing_log_count %}missing logs{% endif %}
+                          {% if record.unscheduled_count %}unscheduled{% endif %}
+                          {% if record.undertime_count %}undertime{% endif %}
+                          {% if record.halfday_count %}half-day{% endif %}
+                          {% if record.overtime_count %}overtime{% endif %}
+                        </span>
+                      </td>
+                    </tr>
+                  {% empty %}
+                  <tr>
+                    <td colspan="5" class="text-center text-secondary py-4">
+                      No attendance records found.
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            <!-- ─── Footer ─── -->
+            <div class="card-footer d-flex align-items-center">
+              <div class="dropdown clzst">
+                <a class="btn dropdown-toggle" data-bs-toggle="dropdown">
+                  <span id="attendance-main-page-count" class="me-1">8</span> records
+                </a>
+                <div class="dropdown-menu">
+                  <a class="dropdown-item" onclick="setPageSize(8)">8 records</a>
+                  <a class="dropdown-item" onclick="setPageSize(20)">20 records</a>
+                  <a class="dropdown-item" onclick="setPageSize(50)">50 records</a>
+                </div>
+              </div>
+              <ul class="pagination m-0 ms-auto" id="attendance-table-pagination"></ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-3 text-secondary" style="font-size:12px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>  
+          <span>Check <a class="fw-bold" href="{% url "scan-captures" %}">Scan Captures</a> to find each employee system scan captures</span>
+        </div>
+      </div>
+    </div>
+    <!-- ═══════════════════════════════════════════
+        SCRIPTS
+    ═══════════════════════════════════════════ -->
+    <script>
+      // ─── Recorded badge ──────────────────────────────────────────────────────────
+      function recordedBadge(log) {
+        if (!log.time_in && !log.time_out)
+          return '<span class="text-secondary">—</span>'
+        if (log.time_in && log.time_out)
+          return '<span class="badge bg-success-lt text-success">Complete</span>'
+        return '<span class="badge bg-warning-lt text-warning">Incomplete</span>'
+      }
+
+      // ─── Flag badges ─────────────────────────────────────────────────────────────
+      function flagBadges(log) {
+        const badges = []
+
+        if (!log.schedule)
+          badges.push('<span class="badge bg-pink-lt">Unscheduled</span>')
+
+        if (log.has_missing_log)
+          badges.push('<span class="badge bg-danger-lt">Missing Log</span>')
+
+        if (log.credited_hours != null && parseFloat(log.credited_hours) > 0)
+          badges.push(`<span class="badge bg-green-lt">Credited ${log.credited_hours}</span>`)
+
+        if (log.is_overtime) {
+          if (log.ot_approved || log.is_ot_exempt)
+            badges.push(`<span class="badge bg-indigo-lt">${log.overtime_hours} Overtime</span>`)
+          else
+            badges.push(`<a href="{% url 'ot_decision' %}?filter=${encodeURIComponent(log.full_name)}" class="badge bg-indigo-lt">Pending OT Request</a>`)
+        }
+
+        if (log.is_undertime)
+          badges.push(`<span class="badge bg-warning-lt">${log.undertime_hours} Undertime</span>`)
+
+        if (log.is_late)
+          badges.push(`<span class="badge bg-red-lt">${log.late_hours} Late</span>`)
+
+        if (log.is_halfday)
+          badges.push('<span class="badge bg-purple-lt">Half-day</span>')
+
+        if (log.has_night_diff)
+          badges.push('<span class="badge bg-indigo-lt">Night Diff.</span>')
+
+        if (log.is_regular_holiday)
+          badges.push('<span class="badge bg-blue-lt">Regular Holiday</span>')
+
+        if (log.is_special_holiday)
+          badges.push('<span class="badge bg-blue-lt">Special Holiday</span>')
+
+        if (log.is_sunday)
+          badges.push('<span class="badge bg-teal-lt">Sunday</span>')
+
+        if (log.is_absent)
+          badges.push('<span class="badge bg-orange-lt">Under Disciplinary Action</span>')
+
+        return badges.length
+          ? `<div class="d-flex flex-wrap gap-1">${badges.join('')}</div>`
+          : '—'
+      }
+
+      // ─── Hours worked cell ───────────────────────────────────────────────────────
+      function hoursWorkedCell(log) {
+        if (log.total_work_hours == null) {
+          return '<span class="text-secondary">—</span>'
+        }
+        return log.total_work_hours
+      }
+
+
+      // ════════════════════════════════════════════
+      //   MODAL — fetch + render logs
+      // ════════════════════════════════════════════
+      let allModalLogs  = []
+      let modalPageSize = 10
+      let modalPage     = 1
+
+      document.querySelector('#attendance-table tbody').addEventListener('click', function (e) {
+        const row = e.target.closest('.attendance-row')
+        if (!row) return
+        document.querySelectorAll('.attendance-row').forEach(r => r.classList.remove('table-active'))
+        row.classList.add('table-active')
+
+        const empId = row.dataset.employeeId
+        const name  = row.dataset.name
+
+        document.getElementById('clickedEmpAttendance').textContent = name
+        document.getElementById('modalAttendanceBody').innerHTML =
+          `<tr><td colspan="7" class="text-center text-secondary py-3">Loading…</td></tr>`
+        document.getElementById('modalApprovalSummary').textContent = ''
+
+        fetch(`/attendance/logs/?employee_id=${empId}`)
+          .then(r => r.json())
+          .then(data => {
+            allModalLogs = data.logs ?? []
+
+            const noSched = allModalLogs.filter(l => l.schedule === null).length
+            const missingCount  = allModalLogs.filter(l => l.has_missing_log).length
+            const undertimeCount = allModalLogs.filter(l => l.is_undertime).length
+            const halfdayCount  = allModalLogs.filter(l => l.is_halfday).length
+            let summary = `${allModalLogs.length} record(s)`
+            if (noSched > 0)       summary += ` · ${noSched} unscheduled`
+            if (missingCount > 0)  summary += ` · ${missingCount} missing log`
+            if (undertimeCount > 0) summary += ` · ${undertimeCount} undertime`
+            if (halfdayCount > 0)  summary += ` · ${halfdayCount} half-day`
+            document.getElementById('modalApprovalSummary').textContent = summary
+
+            modalPage = 1
+            renderModalPage()
+          })
+        .catch(() => {
+          document.getElementById('modalAttendanceBody').innerHTML =
+            `<tr><td colspan="7" class="text-center text-danger">Failed to load logs.</td></tr>`
+        })
+      })
+
+      function renderModalPage() {
+        const tbody = document.getElementById('modalAttendanceBody')
+        const start = (modalPage - 1) * modalPageSize
+        const slice = allModalLogs.slice(start, start + modalPageSize)
+
+        if (allModalLogs.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" class="text-center text-secondary py-3">No records found.</td></tr>`
+          document.getElementById('att-logs-modal-pagination').innerHTML = ''
+          return
+        }
+
+        tbody.innerHTML = slice.map(log => `
+          <tr>
+            <td>${log.date}</td>
+            <td>${log.time_in  ?? '<span class="text-secondary">—</span>'}</td>
+            <td>${log.time_out ?? '<span class="text-secondary">—</span>'}</td>
+            <td>${hoursWorkedCell(log)}</td>
+            <td>${recordedBadge(log)}</td>
+            <td>${flagBadges(log)}</td>
+          </tr>
+        `).join('')
+
+        renderModalPagination()
+      }
+
+      function renderModalPagination() {
+        const total = Math.ceil(allModalLogs.length / modalPageSize)
+        const ul    = document.getElementById('att-logs-modal-pagination')
+        ul.innerHTML = ''
+        for (let p = 1; p <= total; p++) {
+          const li = document.createElement('li')
+          li.className = 'page-item' + (p === modalPage ? ' active' : '')
+          li.innerHTML = `<a class="page-link" style="cursor:pointer">${p}</a>`
+          li.addEventListener('click', () => { modalPage = p; renderModalPage() })
+          ul.appendChild(li)
+        }
+      }
+
+      function setModalPageSize(n) {
+        modalPageSize = n
+        document.getElementById('modal-page-count').textContent = n
+        modalPage = 1
+        renderModalPage()
+      }
+
+
+      // ════════════════════════════════════════════
+      //   APPROVAL SUBMIT (used by approval-records.html)
+      //   Sends JSON to the approval endpoint.
+      // ════════════════════════════════════════════
+      function submitApproval({ attendanceId, decision, remarks = '', overrideScheduleId = null }) {
+        const payload = {
+          attendance_id:        attendanceId,
+          decision:             decision,
+          remarks:              remarks,
+          override_schedule_id: overrideScheduleId || null,
+        }
+
+        return fetch('/attendance/approval/', {
+          method:  'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken':  getCookie('csrftoken'),
+          },
+          body: JSON.stringify(payload),
+        })
+        .then(r => {
+          if (!r.ok) throw new Error(`Server error ${r.status}`)
+          return r.json()
+        })
+      }
+
+      // ── CSRF helper ───────────────────────────────────────────────────────────────
+      function getCookie(name) {
+        let cookieValue = null
+        if (document.cookie && document.cookie !== '') {
+          document.cookie.split(';').forEach(cookie => {
+            const c = cookie.trim()
+            if (c.startsWith(name + '=')) {
+              cookieValue = decodeURIComponent(c.slice(name.length + 1))
+            }
+          })
+        }
+        return cookieValue
+      }
+
+      // ── Wire up approval buttons (if present on the page) ───────────────────────
+      //
+      // Expected markup on the approval-records page:
+      //
+      //   <button class="btn-approve"
+      //           data-attendance-id="123"
+      //           data-remarks="optional remarks">Approve</button>
+      //
+      //   <button class="btn-reject"
+      //           data-attendance-id="123"
+      //           data-remarks="">Reject</button>
+      //
+      //   <select class="schedule-override-select"
+      //           data-attendance-id="123">…</select>
+      //
+      document.addEventListener('click', function (e) {
+        const btn = e.target.closest('[data-attendance-id]')
+        if (!btn) return
+
+        const attendanceId        = btn.dataset.attendanceId
+        const remarks             = btn.dataset.remarks ?? ''
+        const overrideScheduleId  = document.querySelector(
+          `.schedule-override-select[data-attendance-id="${attendanceId}"]`
+        )?.value || null
+
+        let decision = null
+        if (btn.classList.contains('btn-approve')) decision = 'APPROVED'
+        if (btn.classList.contains('btn-reject'))  decision = 'REJECTED'
+        if (!decision) return
+
+        // Visual feedback while waiting
+        btn.disabled = true
+        const originalText = btn.innerHTML
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving…'
+
+        submitApproval({ attendanceId, decision, remarks, overrideScheduleId })
+          .then(data => {
+            if (data.status === 'updated') {
+              // Reload the row or the full page depending on your preference
+              const row = btn.closest('tr')
+              if (row) {
+                // Update the approval badge in the row if present
+                const badge = row.querySelector('.approval-badge')
+                if (badge) {
+                  badge.className = `badge approval-badge ${
+                    decision === 'APPROVED' ? 'bg-success-lt text-success' : 'bg-danger-lt text-danger'
+                  }`
+                  badge.textContent = decision
+                }
+                // Update credited hours cell if present
+                const creditedCell = row.querySelector('.credited-hours-cell')
+                if (creditedCell) {
+                  creditedCell.textContent = data.credited_hours ?? '—'
+                }
+                btn.remove()
+              } else {
+                // Fallback: reload page
+                location.reload()
+              }
+            } else {
+              alert('Unexpected response: ' + JSON.stringify(data))
+              btn.disabled  = false
+              btn.innerHTML = originalText
+            }
+          })
+          .catch(err => {
+            console.error(err)
+            alert('Failed to submit approval. Please try again.')
+            btn.disabled  = false
+            btn.innerHTML = originalText
+          })
+      })
+    </script>
+    <script>
+      initTableController({
+        searchId:    'main-attendance-table',
+        pageCountId: 'attendance-main-page-count',
+        paginId:     'attendance-table-pagination',
+        rowSelector: '.attendance-row',
+        defaultSize: 8,
+        setFnName:   'setPageSize',
+      });
+    </script>
+    <script>
+      // ── Pre-fill search from ?filter= URL param ───────────────────────────────
+      (function () {
+        const param = new URLSearchParams(window.location.search).get('filter')
+        if (!param) return
+        const input = document.getElementById('main-attendance-table')
+        if (!input) return
+        input.value = param
+        input.dispatchEvent(new Event('input'))
+      })()
+    </script>
+    <script src="{% static 'js/tours/attendance/attendance-records.js' %}"></script>
+    <script>
+      function buildStatusCell(row) {
+          if (!row.unscheduled_count && !row.missing_log_count && !row.undertime_count && !row.halfday_count && !row.overtime_count) {
+              return '<span class="fw-bold badge bg-success-lt">Normal Logs</span><span class="d-none" aria-hidden="true"></span>';
+          }
+          let badges = '';
+          let hidden = '';
+          if (row.unscheduled_count) {
+              badges += `<span class="fw-bold badge bg-pink-lt">Has ${row.unscheduled_count > 1 ? row.unscheduled_count + ' ' : ''}Unscheduled Logs</span>`;
+              hidden += ' unscheduled';
+          }
+          if (row.missing_log_count) {
+              badges += `<span class="fw-bold badge bg-danger-lt">Has ${row.missing_log_count > 1 ? row.missing_log_count + ' ' : ''}Missing Logs</span>`;
+              hidden += ' missing logs';
+          }
+          if (row.undertime_count) {
+              badges += `<span class="fw-bold badge bg-warning-lt">Has ${row.undertime_count > 1 ? row.undertime_count + ' ' : ''}Undertime Logs</span>`;
+              hidden += ' undertime';
+          }
+          if (row.halfday_count) {
+              badges += `<span class="fw-bold badge bg-purple-lt">Has ${row.halfday_count > 1 ? row.halfday_count + ' ' : ''}Half-day Logs</span>`;
+              hidden += ' half-day';
+          }
+          if (row.overtime_count) {
+              badges += `<span class="fw-bold badge bg-indigo-lt">Has ${row.overtime_count > 1 ? row.overtime_count + ' ' : ''}Overtime Logs</span>`;
+              hidden += ' overtime';
+          }
+          return `<div class="d-flex flex-wrap gap-1">${badges}</div><span class="d-none" aria-hidden="true">${hidden.trim()}</span>`;
+      }
+
+      function buildDateCell(row) {
+          let html = row.last_date;
+          if (row.is_regular_holiday) html += ' <span class="badge bg-blue-lt ms-1">Regular Holiday</span>';
+          else if (row.is_special_holiday) html += ' <span class="badge bg-blue-lt ms-1">Special Holiday</span>';
+          return html;
+      }
+
+      function patchRow(row) {
+          const tr = document.querySelector(`.attendance-row[data-employee-id="${row.employee_id}"]`);
+          if (tr) {
+              tr.cells[2].innerHTML = buildDateCell(row);
+              tr.cells[3].innerHTML = buildStatusCell(row);
+              tr.style.transition = 'background 0.4s';
+              tr.style.background = 'rgba(var(--tblr-success-rgb), 0.08)';
+              setTimeout(() => { tr.style.background = ''; }, 2000);
+          } else {
+              const unBadge = !row.has_schedule ? '<span class="badge bg-pink-lt ms-1" style="font-size:10px;">UN</span>' : '';
+              const tbody = document.querySelector('#attendance-table tbody');
+              const newTr = document.createElement('tr');
+              newTr.className = 'cursor-pointer attendance-row';
+              newTr.dataset.bsToggle = 'modal';
+              newTr.dataset.bsTarget = '#employeeAttendanceLogs';
+              newTr.dataset.employeeId = row.employee_id;
+              newTr.dataset.name = row.full_name;
+              newTr.dataset.search = `${row.full_name} ${row.department}`;
+              newTr.dataset.department = row.department;
+              newTr.innerHTML = `
+                  <td>
+                      <div class="fw-semibold">${row.full_name}${unBadge}</div>
+                      <div class="text-secondary" style="font-size:12px;">${row.position}</div>
+                  </td>
+                  <td>${row.department}</td>
+                  <td>${buildDateCell(row)}</td>
+                  <td>${buildStatusCell(row)}</td>
+              `;
+              newTr.style.transition = 'background 0.4s';
+              newTr.style.background = 'rgba(var(--tblr-success-rgb), 0.08)';
+              setTimeout(() => { newTr.style.background = ''; }, 2000);
+              tbody.prepend(newTr);
+              if (typeof reindex_setPageSize === 'function') reindex_setPageSize();
+          }
+      }
+    </script>
+    <script>
+      (function () {
+          const since = new Date().toISOString();
+          const url   = `/sse/attendance-rows/?since=${encodeURIComponent(since)}`;
+          const es    = new EventSource(url);
+
+          function handleRows(data) {
+              if (!data.rows || data.rows.length === 0) return;
+
+              data.rows.forEach(patchRow);
+              const searchInput = document.getElementById('main-attendance-table');
+              if (searchInput) searchInput.dispatchEvent(new Event('input'));
+
+              // ── Refresh modal if open and affected employee is being viewed ──
+              const modalEl = document.getElementById('employeeAttendanceLogs');
+              const isModalOpen = modalEl && modalEl.classList.contains('show');
+              if (!isModalOpen) return;
+
+              const activeRow = document.querySelector('.attendance-row.table-active');
+              if (!activeRow) return;
+
+              const openEmpId = activeRow.dataset.employeeId;
+              const affected  = data.rows.some(r => String(r.employee_id) === String(openEmpId));
+              if (!affected) return;
+
+              const savedPage = modalPage;
+              fetch(`/attendance/logs/?employee_id=${openEmpId}`)
+                  .then(r => r.json())
+                  .then(refreshed => {
+                      allModalLogs = refreshed.logs ?? [];
+                      modalPage = savedPage;
+                      const maxPage = Math.max(1, Math.ceil(allModalLogs.length / modalPageSize));
+                      if (modalPage > maxPage) modalPage = maxPage;
+                      renderModalPage();
+                  })
+                  .catch(() => {});
+          }
+
+          es.onmessage = function (e) {
+              try {
+                  const data = JSON.parse(e.data);
+                  handleRows(data);
+              } catch (err) {
+                  console.error('[SSE parse error]', err);
+              }
+          };
+
+          let sseErrors = 0;
+          es.onerror = function () {
+              sseErrors++;
+              if (sseErrors > 10) {
+                  es.close();
+                  console.warn('[SSE] Attendance rows: too many errors, connection closed.');
+              }
+          };
+      })();
+    </script>
+{% endblock %}

@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+    <div class="page-wrapper">
+      {% if dept_warning %}
+      <div class="container-xl mt-4">
+        <div class="alert alert-warning d-flex gap-2 align-items-center">
+          <i class="ti ti-alert-triangle flex-shrink-0"></i>
+          Your account is not assigned to a department. Contact your administrator to get access.
+        </div>
+      </div>
+      {% endif %}
+      <div class="container-xl mt-5">
+        <div class="d-flex align-items-start justify-content-between" style="margin: 0 0 1.15rem 0;">
+          <div>
+            <h2 class="mb-1">Undertime</h2>
+            <ol class="breadcrumb text-secondary mb-0">
+              <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+              <li class="breadcrumb-item active">UT Approvals</li>
+            </ol>
+          </div>
+          <button id="ut-approval-btn-help-tour" class="btn btn-sm btn-ghost-secondary" title="UT Approvals page tour">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            &nbsp;Need Help
+          </button>
+        </div>
+
+        <div class="card">
+          <div class="card-table">
+            <div class="card-header">
+              <div class="row w-full">
+                <div class="col">
+                  <h3 class="card-title mb-0">UT Requests — Pending Approval</h3>
+                  <p class="text-secondary m-0">Review and act on filed undertime requests.</p>
+                </div>
+                <div class="col-md-auto">
+                  <div class="input-group input-group-flat w-auto">
+                    <span class="input-group-text">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/>
+                      </svg>
+                    </span>
+                    <input id="ut-search" type="text" class="form-control" placeholder="Search employee…" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-vcenter table-bordered" id="ut-table">
+                <thead>
+                  <tr>
+                    <th>Employee</th>
+                    <th>Date</th>
+                    <th>Time In</th>
+                    <th>Time Out</th>
+                    <th>UT Hours</th>
+                    <th>Reason</th>
+                    <th>Filed By</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item in ut_requests %}
+                  <tr class="ut-row">
+                    <td>
+                      <div class="fw-semibold">{{ item.att.employee.last_name }}, {{ item.att.employee.first_name }}</div>
+                      <div class="text-secondary" style="font-size:12px;">{{ item.att.employee.position|default:"—" }}</div>
+                    </td>
+                    <td>{{ item.att.date|date:"M d, Y" }}</td>
+                    <td>{{ item.time_in }}</td>
+                    <td>{{ item.time_out }}</td>
+                    <td><span class="fw-semibold text-orange">{{ item.att.undertime_hours }}hrs</span></td>
+                    <td style="max-width:200px; white-space:normal; font-size:13px;">{{ item.ut.reason }}</td>
+                    <td>
+                      <div style="font-size:13px;">{{ item.ut.filed_by.get_full_name|default:"System" }}</div>
+                      <div class="text-secondary" style="font-size:11px;">{{ item.ut.filed_at|date:"M d, Y h:i A" }}</div>
+                    </td>
+                    <td>
+                      <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-ghost-secondary btn-ut-reject"   
+                                data-bs-toggle="modal" 
+                                data-bs-target="#UTrejectModal"
+                                data-ut-id="{{ item.ut.id }}">
+                              Reject
+                        </button>
+                        <button class="btn btn-sm btn-primary btn-ut-approve" 
+                                data-ut-id="{{ item.ut.id }}">
+                              Approve
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {% empty %}
+                  <tr class="tc-django-empty">
+                    <td colspan="8" class="text-center text-secondary py-4">No pending UT requests.</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            <div class="card-footer d-flex align-items-center">
+              <div class="dropdown clzst">
+                <a class="btn dropdown-toggle" data-bs-toggle="dropdown">
+                  <span id="ut-page-count" class="me-1">8</span> records
+                </a>
+                <div class="dropdown-menu">
+                  <a class="dropdown-item" onclick="setPageSize(8)">8 records</a>
+                  <a class="dropdown-item" onclick="setPageSize(20)">20 records</a>
+                  <a class="dropdown-item" onclick="setPageSize(50)">50 records</a>
+                </div>
+              </div>
+              <ul class="pagination m-0 ms-auto" id="ut-pagination"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener('click', function (e) {
+        const approve = e.target.closest('.btn-ut-approve')
+        if (approve) {
+          approve.disabled  = true
+          approve.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'
+          submitDecision(approve.dataset.utId, 'APPROVED', '').then(data => {
+            if (data.status === 'updated') {
+              approve.closest('tr').remove();
+              checkEmpty() 
+              alert("Approval completed.")
+            }
+            else { approve.disabled = false; approve.textContent = 'Approve' }
+          })
+        }
+      })
+
+      document.getElementById('UTrejectModal').addEventListener('show.bs.modal', function (e) {
+        document.getElementById('reject-ut-id').value = e.relatedTarget.dataset.utId
+        document.getElementById('reject-remarks').value = ''
+      })
+      document.getElementById('btn-confirm-ut-reject').addEventListener('click', function () {
+        const utId   = document.getElementById('reject-ut-id').value
+        const remarks = document.getElementById('reject-remarks').value
+        //this.disabled  = true
+        //this.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'
+        submitDecision(utId, 'REJECTED', remarks).then(data => {
+            bootstrap.Modal.getInstance(document.getElementById('UTrejectModal')).hide()
+            if (data.status === 'updated') {
+                document.querySelector(`[data-ut-id="${utId}"]`)?.closest('tr').remove()
+                checkEmpty()
+                alert("Rejection completed.")
+            } else {
+              alert('Failed to reject request')
+            }
+            //this.disabled    = false
+            //this.textContent = 'Confirm Reject'
+        })
+      })
+
+      function submitDecision(utId, decision, remarks) {
+        const form = new FormData()
+        form.append('ut_id', utId)
+        form.append('decision', decision)
+        form.append('remarks', remarks)
+        return fetch("{% url 'ut_decision' %}", {
+          method: 'POST', headers: { 'X-CSRFToken': getCookie('csrftoken') }, body: form
+        }).then(r => r.json())
+      }
+
+      function checkEmpty() {
+        const tbody = document.querySelector('#ut-table tbody')
+        if (!tbody.querySelector('.ut-row')) {
+          tbody.innerHTML = `<tr><td colspan="8" class="text-center text-secondary py-4">No pending UT requests.</td></tr>`
+        }
+      }
+
+      function getCookie(name) {
+        let v = null
+        document.cookie.split(';').forEach(c => {
+          const t = c.trim()
+          if (t.startsWith(name + '=')) v = decodeURIComponent(t.slice(name.length + 1))
+        })
+        return v
+      }
+    </script>
+    <script>
+      initTableController({
+        searchId:    'ut-search',
+        pageCountId: 'ut-page-count',
+        paginId:     'ut-pagination',
+        rowSelector: '.ut-row',
+        defaultSize: 8,
+        setFnName:   'setPageSize',
+      });
+    </script>
+    <script src="{% static 'js/tours/requests/ut-approval.js' %}"></script>
+{% endblock %}

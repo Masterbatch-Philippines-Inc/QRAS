@@ -35,83 +35,83 @@ from apps.qras.modules.attendance.helpers import (
 )
 
 
-@method_decorator([permission_required('ot_filing', 'create')], name='dispatch')
-class OTFilingView(LoginRequiredMixin, View):
+# @method_decorator([permission_required('ot_filing', 'create')], name='dispatch')
+# class OTFilingView(LoginRequiredMixin, View):
 
-    def get(self, request):
-        dept_filter  = get_dept_queryset_filter(request, dept_field_path='department')
-        if dept_filter is None:
-            return render(request, 'requests/overtime/ot-filing.html', {'dept_warning': True, 'employees': []})
+#     def get(self, request):
+#         dept_filter  = get_dept_queryset_filter(request, dept_field_path='department')
+#         if dept_filter is None:
+#             return render(request, 'requests/overtime/ot-filing.html', {'dept_warning': True, 'employees': []})
 
-        self_exclude = get_self_exclude(request)
-        employees    = Employee.objects.filter(
-            is_active=True, is_resigned=False, **dept_filter
-        )
-        if self_exclude:
-            employees = employees.exclude(pk=self_exclude)
-        employees = employees.values('employee_id', 'first_name', 'last_name').order_by('last_name', 'first_name')
-        return render(request, 'requests/overtime/ot-filing.html', {'employees': employees})
+#         self_exclude = get_self_exclude(request)
+#         employees    = Employee.objects.filter(
+#             is_active=True, is_resigned=False, **dept_filter
+#         )
+#         if self_exclude:
+#             employees = employees.exclude(pk=self_exclude)
+#         employees = employees.values('employee_id', 'first_name', 'last_name').order_by('last_name', 'first_name')
+#         return render(request, 'requests/overtime/ot-filing.html', {'employees': employees})
 
-    def post(self, request):
-        try:
-            data        = json.loads(request.body)
-            employee_id = data.get('employee_id')
-            date_str    = data.get('date')
-            ot_type     = data.get('ot_type')
-            ot_start    = data.get('ot_start')
-            ot_end      = data.get('ot_end')
+#     def post(self, request):
+#         try:
+#             data        = json.loads(request.body)
+#             employee_id = data.get('employee_id')
+#             date_str    = data.get('date')
+#             ot_type     = data.get('ot_type')
+#             ot_start    = data.get('ot_start')
+#             ot_end      = data.get('ot_end')
 
-            employee   = Employee.objects.get(employee_id=employee_id)
-            work_date  = datetime.strptime(date_str, '%Y-%m-%d').date()
-            attendance = Attendance.objects.filter(employee=employee, date=work_date).first()
+#             employee   = Employee.objects.get(employee_id=employee_id)
+#             work_date  = datetime.strptime(date_str, '%Y-%m-%d').date()
+#             attendance = Attendance.objects.filter(employee=employee, date=work_date).first()
 
-            if not attendance:
-                return JsonResponse({"error": "No attendance record found for this employee on that date."}, status=400)
-            if OvertimeRequest.objects.filter(attendance=attendance).exists():
-                return JsonResponse({"error": "An OT request already exists for this employee on that date."}, status=400)
-            if not attendance.schedule:
-                return JsonResponse({"error": "Employee has no schedule assigned for that date."}, status=400)
+#             if not attendance:
+#                 return JsonResponse({"error": "No attendance record found for this employee on that date."}, status=400)
+#             if OvertimeRequest.objects.filter(attendance=attendance).exists():
+#                 return JsonResponse({"error": "An OT request already exists for this employee on that date."}, status=400)
+#             if not attendance.schedule:
+#                 return JsonResponse({"error": "Employee has no schedule assigned for that date."}, status=400)
 
-            ot_start_t  = datetime.strptime(ot_start, '%H:%M').time()
-            ot_end_t    = datetime.strptime(ot_end,   '%H:%M').time()
-            shift_start = attendance.schedule.shift_start
-            shift_end   = attendance.schedule.shift_end
+#             ot_start_t  = datetime.strptime(ot_start, '%H:%M').time()
+#             ot_end_t    = datetime.strptime(ot_end,   '%H:%M').time()
+#             shift_start = attendance.schedule.shift_start
+#             shift_end   = attendance.schedule.shift_end
 
-            if ot_type == 'pre_shift':
-                if ot_start_t >= shift_start:
-                    return JsonResponse({"error": "Pre-shift OT start must be before shift start."}, status=400)
-                if ot_end_t > shift_start:
-                    return JsonResponse({"error": "Pre-shift OT end must not exceed shift start."}, status=400)
-            elif ot_type == 'post_shift':
-                if ot_start_t < shift_end:
-                    return JsonResponse({"error": "Post-shift OT start must be at or after shift end."}, status=400)
-                if ot_end_t <= shift_end:
-                    return JsonResponse({"error": "Post-shift OT end must be after shift end."}, status=400)
+#             if ot_type == 'pre_shift':
+#                 if ot_start_t >= shift_start:
+#                     return JsonResponse({"error": "Pre-shift OT start must be before shift start."}, status=400)
+#                 if ot_end_t > shift_start:
+#                     return JsonResponse({"error": "Pre-shift OT end must not exceed shift start."}, status=400)
+#             elif ot_type == 'post_shift':
+#                 if ot_start_t < shift_end:
+#                     return JsonResponse({"error": "Post-shift OT start must be at or after shift end."}, status=400)
+#                 if ot_end_t <= shift_end:
+#                     return JsonResponse({"error": "Post-shift OT end must be after shift end."}, status=400)
 
-            if ot_start_t >= ot_end_t:
-                return JsonResponse({"error": "OT start must be before OT end."}, status=400)
+#             if ot_start_t >= ot_end_t:
+#                 return JsonResponse({"error": "OT start must be before OT end."}, status=400)
 
-            ot_hours = round(
-                (datetime.combine(work_date, ot_end_t) - datetime.combine(work_date, ot_start_t)).total_seconds() / 3600,
-                2
-            )
+#             ot_hours = round(
+#                 (datetime.combine(work_date, ot_end_t) - datetime.combine(work_date, ot_start_t)).total_seconds() / 3600,
+#                 2
+#             )
 
-            OvertimeRequest.objects.create(
-                attendance=attendance,
-                filed_by=request.user,
-                ot_type=ot_type,
-                ot_start=ot_start_t,
-                ot_end=ot_end_t,
-                ot_hours=ot_hours,
-                status='PENDING',
-            )
+#             OvertimeRequest.objects.create(
+#                 attendance=attendance,
+#                 filed_by=request.user,
+#                 ot_type=ot_type,
+#                 ot_start=ot_start_t,
+#                 ot_end=ot_end_t,
+#                 ot_hours=ot_hours,
+#                 status='PENDING',
+#             )
 
-            return JsonResponse({"message": "OT request filed successfully.", "ot_hours": ot_hours}, status=200)
+#             return JsonResponse({"message": "OT request filed successfully.", "ot_hours": ot_hours}, status=200)
 
-        except Employee.DoesNotExist:
-            return JsonResponse({"error": "Employee not found."}, status=404)
-        except Exception as e:
-            return JsonResponse({"error": str(e)}, status=400)
+#         except Employee.DoesNotExist:
+#             return JsonResponse({"error": "Employee not found."}, status=404)
+#         except Exception as e:
+#             return JsonResponse({"error": str(e)}, status=400)
 
 
 @method_decorator([permission_required('ot_filing', 'read')], name='dispatch')
@@ -155,7 +155,7 @@ class OTDecisionView(LoginRequiredMixin, View):
     def get(self, request):
         dept_filter = get_dept_queryset_filter(request, dept_field_path='employee__department')
         if dept_filter is None:
-            return render(request, 'requests/overtime/ot-approval.html', {'dept_warning': True})
+            return render(request, 'pages/request/overtimes.django', {'dept_warning': True})
 
         # Exclude self (Department Head's own linked employee)
         self_exclude = get_self_exclude(request)
@@ -227,7 +227,7 @@ class OTDecisionView(LoginRequiredMixin, View):
                 'has_post_ot':  bool(raw_time_out and shift_end and raw_time_out > shift_end),
             })
 
-        return render(request, 'requests/overtime/ot-approval.html', {'ot_records': enriched})
+        return render(request, 'pages/request/overtimes.django', {'ot_records': enriched})
 
     def post(self, request):
         try:
@@ -303,7 +303,7 @@ class UTDecisionView(LoginRequiredMixin, View):
     def get(self, request):
         dept_filter = get_dept_queryset_filter(request, dept_field_path='attendance__employee__department')
         if dept_filter is None:
-            return render(request, 'requests/undertime/ut-approval.html', {'dept_warning': True})
+            return render(request, 'pages/request/undertimes.django', {'dept_warning': True})
 
         ut_requests = (
             UndertimeRequest.objects
@@ -323,7 +323,7 @@ class UTDecisionView(LoginRequiredMixin, View):
             time_out = next((timezone.localtime(l.timestamp).strftime('%I:%M %p') for l in reversed(list(logs)) if l.is_time_out), '—')
             enriched.append({"ut": ut, "att": att, "time_in": time_in, "time_out": time_out})
 
-        return render(request, 'requests/undertime/ut-approval.html', {'ut_requests': enriched})
+        return render(request, 'pages/request/undertimes.django', {'ut_requests': enriched})
 
     def post(self, request):
         ut_id    = request.POST.get('ut_id')
@@ -387,7 +387,7 @@ class HDDecisionView(LoginRequiredMixin, View):
     def get(self, request):
         dept_filter = get_dept_queryset_filter(request, dept_field_path='employee__department')
         if dept_filter is None:
-            return render(request, 'requests/halfday/hd-approval.html', {'dept_warning': True})
+            return render(request, 'pages/request/halfdays.django', {'dept_warning': True})
 
         pending_hd = (
             HalfdayRequest.objects
@@ -414,7 +414,7 @@ class HDDecisionView(LoginRequiredMixin, View):
                 "late_hours":  format_hours_to_text(attendance.late_hours)       if attendance else '—',
             })
 
-        return render(request, 'requests/halfday/hd-approval.html', {'hd_requests': enriched})
+        return render(request, 'pages/request/halfdays.django', {'hd_requests': enriched})
 
     def post(self, request):
         hd_id    = request.POST.get('hd_id')
@@ -460,89 +460,89 @@ class HDDecisionView(LoginRequiredMixin, View):
             return JsonResponse({"error": str(e)}, status=400)
 
 
-@method_decorator([permission_required('leave_filing', 'read')], name='dispatch')
-class LeaveFilingView(LoginRequiredMixin, View):
+# @method_decorator([permission_required('leave_filing', 'read')], name='dispatch')
+# class LeaveFilingView(LoginRequiredMixin, View):
 
-    def get(self, request):
-        dept_filter  = get_dept_queryset_filter(request, dept_field_path='department')
-        if dept_filter is None:
-            return render(request, 'requests/leave/leave-filing.html', {'dept_warning': True, 'employees': []})
+#     def get(self, request):
+#         dept_filter  = get_dept_queryset_filter(request, dept_field_path='department')
+#         if dept_filter is None:
+#             return render(request, 'requests/leave/leave-filing.html', {'dept_warning': True, 'employees': []})
 
-        self_exclude = get_self_exclude(request)
-        employees    = Employee.objects.filter(
-            is_active=True, is_resigned=False, **dept_filter
-        )
-        if self_exclude:
-            employees = employees.exclude(pk=self_exclude)
-        employees = employees.order_by('last_name', 'first_name')
-        return render(request, 'requests/leave/leave-filing.html', {'employees': employees})
+#         self_exclude = get_self_exclude(request)
+#         employees    = Employee.objects.filter(
+#             is_active=True, is_resigned=False, **dept_filter
+#         )
+#         if self_exclude:
+#             employees = employees.exclude(pk=self_exclude)
+#         employees = employees.order_by('last_name', 'first_name')
+#         return render(request, 'requests/leave/leave-filing.html', {'employees': employees})
 
-    def post(self, request):
-        try:
-            data       = json.loads(request.body)
-            emp_id     = data.get('employee_id')
-            leave_type = data.get('leave_type')
-            date_from  = datetime.strptime(data.get('date_from'), '%Y-%m-%d').date()
-            date_to    = datetime.strptime(data.get('date_to'),   '%Y-%m-%d').date()
+#     def post(self, request):
+#         try:
+#             data       = json.loads(request.body)
+#             emp_id     = data.get('employee_id')
+#             leave_type = data.get('leave_type')
+#             date_from  = datetime.strptime(data.get('date_from'), '%Y-%m-%d').date()
+#             date_to    = datetime.strptime(data.get('date_to'),   '%Y-%m-%d').date()
 
-            if date_from > date_to:
-                return JsonResponse({"error": "Date from must be before date to."}, status=400)
+#             if date_from > date_to:
+#                 return JsonResponse({"error": "Date from must be before date to."}, status=400)
 
-            employee = Employee.objects.get(employee_id=emp_id)
+#             employee = Employee.objects.get(employee_id=emp_id)
 
-            # block if date range is a single day and leave type is not undertime
-            if leave_type not in ('sick', 'vacation', 'undertime'):
-                return JsonResponse({"error": "Invalid leave type."}, status=400)
+#             # block if date range is a single day and leave type is not undertime
+#             if leave_type not in ('sick', 'vacation', 'undertime'):
+#                 return JsonResponse({"error": "Invalid leave type."}, status=400)
 
-            # compute days + check rest days
-            num_days, rest_hits = compute_leave_days(date_from, date_to, employee)
+#             # compute days + check rest days
+#             num_days, rest_hits = compute_leave_days(date_from, date_to, employee)
 
-            # block if existing approved leave overlaps
-            overlap = LeaveRequest.objects.filter(
-                employee=employee,
-                status='APPROVED',
-                date_from__lte=date_to,
-                date_to__gte=date_from,
-            ).exists()
-            if overlap:
-                return JsonResponse({"error": "An approved leave already exists within this date range."}, status=400)
+#             # block if existing approved leave overlaps
+#             overlap = LeaveRequest.objects.filter(
+#                 employee=employee,
+#                 status='APPROVED',
+#                 date_from__lte=date_to,
+#                 date_to__gte=date_from,
+#             ).exists()
+#             if overlap:
+#                 return JsonResponse({"error": "An approved leave already exists within this date range."}, status=400)
 
-            leave = LeaveRequest.objects.create(
-                employee              = employee,
-                lf_number             = data.get('lf_number', ''),
-                form_code             = data.get('form_code', ''),
-                leave_type            = leave_type,
-                reason                = data.get('reason', ''),
-                date_from             = date_from,
-                date_to               = date_to,
-                num_days              = num_days,
-                signature_of_employee = data.get('signature_of_employee', ''),
-                conformed_by          = data.get('conformed_by', ''),
-                noted_by              = data.get('noted_by', ''),
-                filed_by              = request.user,
-                status                = 'PENDING',
-            )
+#             leave = LeaveRequest.objects.create(
+#                 employee              = employee,
+#                 lf_number             = data.get('lf_number', ''),
+#                 form_code             = data.get('form_code', ''),
+#                 leave_type            = leave_type,
+#                 reason                = data.get('reason', ''),
+#                 date_from             = date_from,
+#                 date_to               = date_to,
+#                 num_days              = num_days,
+#                 signature_of_employee = data.get('signature_of_employee', ''),
+#                 conformed_by          = data.get('conformed_by', ''),
+#                 noted_by              = data.get('noted_by', ''),
+#                 filed_by              = request.user,
+#                 status                = 'PENDING',
+#             )
 
-            response = {
-                "message":   "Leave request filed successfully.",
-                "leave_id":  leave.id,
-                "num_days":  float(num_days),
-            }
+#             response = {
+#                 "message":   "Leave request filed successfully.",
+#                 "leave_id":  leave.id,
+#                 "num_days":  float(num_days),
+#             }
 
-            if rest_hits:
-                response["warning"] = (
-                    f"Note: This date range includes "
-                    f"{len(rest_hits)} rest day(s): "
-                    f"{', '.join(d.strftime('%b %d') for d in rest_hits)}. "
-                    f"Adjust if needed."
-                )
+#             if rest_hits:
+#                 response["warning"] = (
+#                     f"Note: This date range includes "
+#                     f"{len(rest_hits)} rest day(s): "
+#                     f"{', '.join(d.strftime('%b %d') for d in rest_hits)}. "
+#                     f"Adjust if needed."
+#                 )
 
-            return JsonResponse(response, status=200)
+#             return JsonResponse(response, status=200)
 
-        except Employee.DoesNotExist:
-            return JsonResponse({"error": "Employee not found."}, status=404)
-        except Exception as e:
-            return JsonResponse({"error": str(e)}, status=400)
+#         except Employee.DoesNotExist:
+#             return JsonResponse({"error": "Employee not found."}, status=404)
+#         except Exception as e:
+#             return JsonResponse({"error": str(e)}, status=400)
 
 
 @method_decorator([permission_required('approvals_leaves', 'read')], name='dispatch')
@@ -551,7 +551,7 @@ class LeaveDecisionView(LoginRequiredMixin, View):
     def get(self, request):
         dept_filter = get_dept_queryset_filter(request, dept_field_path='employee__department')
         if dept_filter is None:
-            return render(request, 'requests/leave/leave-approval.html', {'dept_warning': True})
+            return render(request, 'pages/request/leaves.django', {'dept_warning': True})
 
         pending_leaves = (
             LeaveRequest.objects
@@ -559,7 +559,7 @@ class LeaveDecisionView(LoginRequiredMixin, View):
             .filter(status='PENDING', **dept_filter)
             .order_by('-filed_at')
         )
-        return render(request, 'requests/leave/leave-approval.html', {
+        return render(request, 'pages/request/leaves.django', {
             'pending_leaves': pending_leaves,
         })
 
