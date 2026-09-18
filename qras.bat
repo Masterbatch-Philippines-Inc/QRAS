@@ -5,6 +5,6 @@ cd /d "%~dp0"
 
 call .venv\Scripts\activate.bat
 
-python manage.py runserver 0.0.0.0:9001
+python manage.py runserver 0.0.0.0:9000
 
 pause
