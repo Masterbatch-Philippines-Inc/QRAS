@@ -1,0 +1,155 @@
+{% extends 'base.django' %}
+{% load static %}
+{% block content %}
+    {% if not already_verified %}
+    <div class="modal modal-blur fade show d-block" id="co-password-gate-modal" tabindex="-1" role="dialog" style="background:rgba(0,0,0,0.2);">
+      <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Confirm Identity</h5>
+          </div>
+          <div class="modal-body">
+            <p class="text-secondary mb-3">Enter your password to access Clock Offset Settings.</p>
+            <div id="co-gate-alert" class="mb-2"></div>
+            <div class="mb-3">
+              <label class="form-label required">Password</label>
+              <input type="password" id="co-gate-password" class="form-control" placeholder="Your password" />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <a href="/" class="btn btn-ghost-secondary me-auto">Cancel</a>
+            <button id="co-gate-btn" class="btn btn-primary" onclick="coVerifyPassword()">Confirm</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    <div class="page-wrapper" id="co-main-content" {% if not already_verified %}style="display:none;"{% endif %}>
+      <div class="container-xl mt-5">
+        <div class="d-flex align-items-center justify-content-between" style="margin-bottom:.35rem;">
+          <h2 class="mb-0">Clock Offset Settings</h2>
+        </div>
+        <ol class="breadcrumb text-secondary" aria-label="breadcrumbs" style="margin: 0 0 1rem 0;">
+          <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Clock Offset Settings</li>
+        </ol>
+        <div class="row">
+
+          <!-- ─── Clock Offset Form ─── -->
+          <div class="container container-tight py-4">
+            <div class="card card-md">
+              <div class="card-header">
+                <div class="col">
+                  <h3 class="card-title mb-0">Set System Time Offset</h3>
+                  <p class="text-secondary m-0" style="font-size:13px;">Set how many minutes the system clock should be displayed.</p>
+                </div>
+              </div>
+              <div class="card-body">
+
+                <div class="mb-3">
+                  <label class="form-label required">Offset (minutes)</label>
+                  <input type="number" id="offset-input" class="form-control" value="{{ current_offset }}">
+                  <div class="mt-2">
+                    <small class="text-muted">Positive = delayed, Negative = advanced, 0 = real time</small>
+                  </div>
+                </div>
+
+                <div class="mt-4">
+                  <button class="btn btn-primary w-100" onclick="saveOffset()">Save</button>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <style>
+      @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+      #co-password-gate-modal { z-index: 1060; }
+    </style>
+    <script>
+      let _coCountdownTimer = null;
+
+      function coVerifyPassword() {
+        const btn      = document.getElementById('co-gate-btn');
+        const input    = document.getElementById('co-gate-password');
+        const alertBox = document.getElementById('co-gate-alert');
+
+        btn.disabled  = true;
+        btn.innerHTML = 'Verifying...';
+        alertBox.innerHTML = '';
+
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        formData.append('password', input.value);
+
+        fetch("{% url 'verify-clock-offset-password' %}", { method: 'POST', body: formData })
+          .then(r => r.json())
+          .then(data => {
+            if (data.status === 'ok') {
+              document.getElementById('co-password-gate-modal').remove();
+              document.getElementById('co-main-content').style.display = '';
+            } else if (data.status === 'locked') {
+              coStartCountdown(data.remaining, btn, alertBox);
+            } else {
+              alertBox.innerHTML = `<div class="alert alert-danger py-2">Incorrect password. ${data.attempts_left} attempt(s) remaining.</div>`;
+              input.value   = '';
+              btn.disabled  = false;
+              btn.innerHTML = 'Confirm';
+            }
+          })
+          .catch(() => {
+            alertBox.innerHTML = '<div class="alert alert-danger py-2">Network error. Please try again.</div>';
+            btn.disabled  = false;
+            btn.innerHTML = 'Confirm';
+          });
+      }
+
+      function coStartCountdown(seconds, btn, alertBox) {
+        let remaining = seconds;
+        btn.disabled  = true;
+
+        function tick() {
+          const m = Math.floor(remaining / 60);
+          const s = String(remaining % 60).padStart(2, '0');
+          alertBox.innerHTML = `<div class="alert alert-warning py-2">Too many failed attempts. Try again in ${m}:${s}.</div>`;
+          if (remaining <= 0) {
+            clearInterval(_coCountdownTimer);
+            btn.disabled  = false;
+            btn.innerHTML = 'Confirm';
+            alertBox.innerHTML = '<div class="alert alert-info py-2">You may try again now.</div>';
+            return;
+          }
+          remaining--;
+        }
+        tick();
+        _coCountdownTimer = setInterval(tick, 1000);
+      }
+
+      document.getElementById('co-gate-password').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') coVerifyPassword();
+      });
+
+      function saveOffset() {
+        const minutes = document.getElementById('offset-input').value;
+        const formData = new FormData();
+        formData.append('minutes', minutes);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        fetch('', { method: 'POST', body: formData })
+          .then(r => r.json())
+          .then(data => {
+            const el = document.getElementById('offset-alert');
+            if (data.status === 'ok') {
+              alert('Clock offset updated to ' + data.offset + ' minute(s).');
+              location.reload();
+            }
+            else {
+              el.innerHTML = '<div class="alert alert-danger">' + (data.error || 'Error') + '</div>';
+            }
+          });
+      }
+    </script>
+{% endblock %}

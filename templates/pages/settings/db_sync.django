@@ -17,7 +17,7 @@
             </div>
           </div>
           <div class="modal-footer">
-            <a href="/" class="btn btn-ghost-secondary me-auto">Cancel</a>
+            <a href="{% url 'dashboard' %}" class="btn btn-ghost-secondary me-auto">Cancel</a>
             <button id="gate-btn" class="btn btn-primary" onclick="dbSyncdbSyncverifyPassword()">Confirm</button>
           </div>
         </div>

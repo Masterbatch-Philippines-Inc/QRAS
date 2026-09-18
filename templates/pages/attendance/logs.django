@@ -487,7 +487,7 @@
         input.dispatchEvent(new Event('input'))
       })()
     </script>
-    <script src="{% static 'js/tours/attendance/attendance-records.js' %}"></script>
+  <script src="{% static 'js/components/pages/features/navigator/attendance/logs.js' %}"></script>
     <script>
       function buildStatusCell(row) {
           if (!row.unscheduled_count && !row.missing_log_count && !row.undertime_count && !row.halfday_count && !row.overtime_count) {

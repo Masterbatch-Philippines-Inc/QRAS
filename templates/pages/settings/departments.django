@@ -257,5 +257,5 @@
         setFnName:   'setPageSize',
       });
     </script>
-    <script src="{% static 'js/tours/settings/departments.js' %}"></script>
+    <script src="{% static 'js/components/pages/features/navigator/settings/departments.js' %}"></script>
 {% endblock %}

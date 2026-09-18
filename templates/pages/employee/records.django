@@ -864,5 +864,6 @@
       })();
     </script>
     {% endif %}
-    <script src="{% static 'js/tours/employees.js' %}"></script>
+    <script src="{% static 'js/components/pages/features/navigator/employees.js' %}"></script>
+    
 {% endblock %}

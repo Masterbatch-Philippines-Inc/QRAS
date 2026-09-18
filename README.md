@@ -73,3 +73,7 @@ py -c "from django.core.management.utils import get_random_secret_key; print(get
 ```bash
 py -c "import struct; print(struct.calcsize('P')*8)"
 ```
+#### 3. Compile the static files
+```bash
+python manage.py collectstatic --noinput
+```

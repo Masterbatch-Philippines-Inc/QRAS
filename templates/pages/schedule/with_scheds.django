@@ -1171,5 +1171,5 @@
         setFnName:   'setPageSize',
       });
     </script>
-    <script src="{% static 'js/tours/schedules/schedules.js' %}"></script>
+    <script src="{% static 'js/components/pages/features/navigator/schedule/with_scheds.js' %}"></script>
 {% endblock %}

@@ -395,5 +395,5 @@
         });
       });
     </script>
-    <script src="{% static 'js/tours/reports/timesheet.js' %}"></script>
+    <script src="{% static 'js/components/pages/features/navigator/report/credited.js' %}"></script>
 {% endblock %}

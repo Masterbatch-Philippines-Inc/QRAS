@@ -2,7 +2,7 @@
 <ul class="navbar-nav pt-lg-3">
 
   {# ── Scanner & Employee Code — public, no auth needed ── #}
-  {% comment %} {% if not user.is_authenticated %} {% endcomment %}
+  {% if not user.is_authenticated %}
     <li class="nav-item {% if request.resolver_match.url_name == 'scanner' %}active{% endif %}">
       <a class="nav-link" href="{% url 'scanner' %}">
         <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -35,7 +35,7 @@
         <span class="nav-link-title">Employee Code</span>
       </a>
     </li>
-  {% comment %} {% endif %} {% endcomment %}
+  {% endif %}
 
   {% if user.is_authenticated %}
 

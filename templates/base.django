@@ -43,7 +43,7 @@
       import Shepherd from "{% static 'js/libraries/shepherd.js' %}";
       window.Shepherd = Shepherd;
     </script>
-    <script src="{% static 'js/libraries/shepherd.js' %}"></script>
+    <script src="{% static 'js/components/pages/features/navigator/shepherd-init.js' %}"></script>
     {% block scripts %}{% endblock %}
   </body>
 

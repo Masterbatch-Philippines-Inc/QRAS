@@ -399,5 +399,5 @@
         });
       });
     </script>
-    <script src="{% static 'js/tours/reports/timesheet-actual.js' %}"></script>
+    <script src="{% static 'js/components/pages/features/navigator/report/actuals.js' %}"></script>
 {% endblock %}

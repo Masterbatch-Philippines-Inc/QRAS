@@ -430,5 +430,5 @@
         input.dispatchEvent(new Event('input'))
       })()
     </script>
-    <script src="{% static 'js/tours/requests/ot-approval.js' %}"></script>
+    <script src="{% static 'js/components/pages/features/navigator/request/overtimes.js' %}"></script>
 {% endblock %}

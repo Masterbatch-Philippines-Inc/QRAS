@@ -22,12 +22,13 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('apps.qras.urls')),
+    path('', include('apps.qras.modules.features.clock_offset.urls')),
 ]
 
-# if settings.DEBUG:
-#     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
-# handler401 = 'handlers.views.error_401'
-# handler403 = 'handlers.views.error_403'
-# handler404 = 'handlers.views.error_404'
-# handler500 = 'handlers.views.error_500'
+handler401 = 'apps.qras.handlers.views.error_401'
+handler403 = 'apps.qras.handlers.views.error_403'
+handler404 = 'apps.qras.handlers.views.error_404'
+handler500 = 'apps.qras.handlers.views.error_500'

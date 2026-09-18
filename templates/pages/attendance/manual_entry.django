@@ -530,5 +530,5 @@
         if (pendingDup?.resolve) pendingDup.resolve('keep')
       })
     </script>
-    <script src="{% static 'js/tours/attendance/manual-attendance.js' %}"></script>
+    <script src="{% static 'js/components/pages/features/navigator/attendance/manual_entry.js' %}"></script>
 {% endblock %}

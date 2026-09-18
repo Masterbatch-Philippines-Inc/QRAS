@@ -354,5 +354,5 @@
         setFnName:   'setPageSize',
       });
     </script>
-    <script src="{% static 'js/tours/scanner/scan-capture.js' %}"></script>
+    <script src="{% static 'js/components/pages/features/navigator/schedule/captures.js' %}"></script>
 {% endblock %}

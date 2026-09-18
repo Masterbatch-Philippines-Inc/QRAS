@@ -12,19 +12,19 @@ import time as time_module
 
 # Create your views here.
 def maintenance(request):
-    return render(request, 'handlers/maintenance.html')
+    return render(request, 'handlers/maintenance.django')
 
 def error_401(request):
-    return render(request, 'handlers/error-401.html', status=401)
+    return render(request, 'handlers/error-401.django', status=401)
 
 def error_403(request, exception=None):
-    return render(request, 'handlers/error-403.html', status=403)
+    return render(request, 'handlers/error-403.django', status=403)
 
 def error_404(request, exception=None):
-    return render(request, 'handlers/error-404.html', status=404)
+    return render(request, 'handlers/error-404.django', status=404)
 
 def error_500(request):
-    return render(request, 'handlers/error-500.html', status=500)
+    return render(request, 'handlers/error-500.django', status=500)
 
 # In-memory sync job store { job_id: { 'lines': [], 'done': bool } }
 _sync_jobs = {}

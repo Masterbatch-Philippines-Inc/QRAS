@@ -331,5 +331,5 @@
         setFnName:   'setPageSize',
       });
     </script>
-    <script src="{% static 'js/tours/schedules/unscheduled.js' %}"></script>
+    <script src="{% static 'js/components/pages/features/navigator/schedule/no_scheds.js' %}"></script>
 {% endblock %}

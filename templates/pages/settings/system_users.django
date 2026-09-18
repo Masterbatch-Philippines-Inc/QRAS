@@ -430,5 +430,5 @@
         setFnName:   'setPageSize',
       });
     </script>
-    <script src="{% static 'js/tours/settings/system-users.js' %}"></script>
+    <script src="{% static 'js/components/pages/features/navigator/access/system_users.js' %}"></script>
 {% endblock %}

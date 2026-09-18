@@ -438,5 +438,5 @@
         setFnName:   'setPageSize',
       });
     </script>
-    <script src="{% static 'js/tours/settings/employee-group.js' %}"></script>
+    <script src="{% static 'js/components/pages/features/navigator/settings/employee_group.js' %}"></script>
 {% endblock %}

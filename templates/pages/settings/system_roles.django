@@ -515,7 +515,7 @@
     setFnName:   'setRolePageSize',
   });
 </script>
-<script src="{% static 'js/tours/settings/roles.js' %}"></script>
+    <script src="{% static 'js/components/pages/features/navigator/access/system_roles.js' %}"></script>
 <script>
   console.log(typeof tabler.Modal);
 </script>

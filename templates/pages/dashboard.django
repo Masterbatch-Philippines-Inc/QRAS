@@ -327,7 +327,7 @@
       setFnName:   'setPageSize',
     });
   </script>
-  <script src="{% static 'js/components/pages/features/dashboard.js' %}"></script>
+  <script src="{% static 'js/components/pages/features/navigator/dashboard.js' %}"></script>
   <script>
     (function () {
         const since = new Date().toISOString();

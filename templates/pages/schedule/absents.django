@@ -7,7 +7,7 @@
           <div class="mb-3">
           </div>
           <div class="mb-3">
-            <img src="{% static 'img/loader-cat.svg' %}" height="80" alt="" style="position:relative; right:15px;">
+            <img src="{% static 'img/loader_cat.svg' %}" height="80" alt="" style="position:relative; right:15px;">
           </div>
           <div class="text-secondary mb-3">Loading absence records…</div>
           <div class="progress progress-sm" style="width:220px; margin:0 auto;">
@@ -262,7 +262,7 @@
         setFnName:   'setAbsPageSize',
       });
     </script>
-    <script src="{% static 'js/tours/schedules/absences.js' %}"></script>
+    <script src="{% static 'js/components/pages/features/navigator/schedule/absents.js' %}"></script>
     <script>
       function showAbsLoader() {
         document.getElementById('parent-abs-loader').style.display = '';
