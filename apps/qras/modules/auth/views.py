@@ -4,30 +4,9 @@ import string
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views import View
-from django.views.generic import ListView
-from django.http import JsonResponse
-from django.core.mail import send_mail
-from django.conf import settings
-
-# from .forms import RegisterForm
 from apps.qras.models.auth import User
-from apps.qras.models.access import Role, Module, RolePermission, Role as SystemRole, Department
-
 from django.utils.decorators import method_decorator
-from apps.qras.modules.auth.decorators import role_required, permission_required
-
-from django.contrib.auth.views import PasswordChangeView
-from django.contrib.sessions.models import Session
-from django.utils import timezone as tz
-from django.contrib.auth import update_session_auth_hash
-from django.urls import reverse_lazy
-
-from django.db import models as django_models
-from apps.qras.models.employee import Employee as EmployeeModel
-from apps.qras.models.attendance import OvertimeRequest, UndertimeRequest, HalfdayRequest, LeaveRequest, MissingLog
-
 
 
 # ─────────────────────────────────────────────────────────────────

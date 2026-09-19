@@ -4,7 +4,6 @@ from django.views import View
 from django.utils.decorators import method_decorator
 from apps.qras.modules.auth.decorators import permission_required
 from apps.qras.handlers.utils.sync_helpers import sync_all_models, sync_scan_files, is_auto_sync_enabled, set_auto_sync_enabled
-import io
 from django.http import StreamingHttpResponse
 import threading
 import uuid

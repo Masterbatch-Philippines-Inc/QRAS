@@ -10,7 +10,6 @@ from apps.qras.models.employee import (
 )
 from apps.qras.models.attendance import (
   AttendanceLog,
-  Attendance,
   AttendanceLogAudit
 )
 from apps.qras.models.scanner import (
@@ -26,13 +25,13 @@ from apps.qras.modules.features.clock_offset.utils import get_clock_offset
 
 
 from apps.qras.modules.attendance.helpers import record_attendance, check_duplicate_log, _flag_past_missing_logs
-from apps.qras.modules.auth.decorators import role_required, permission_required
+from apps.qras.modules.auth.decorators import permission_required
 from django.utils.decorators import method_decorator
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views import View
-import fitz  # PyMuPDF
+import pymupdf
 import json as json_module
 from datetime import datetime, timedelta, date, date as date_cls
  
@@ -361,7 +360,7 @@ class ScanUploadParseView(LoginRequiredMixin, View):
 
         pdf_bytes = pdf_file.read()
         try:
-            doc = fitz.open(stream=pdf_bytes, filetype='pdf')
+            doc = pymupdf.open(stream=pdf_bytes, filetype='pdf')
         except Exception as e:
             return JsonResponse({'error': f'Cannot open PDF: {e}'}, status=400)
 
@@ -375,7 +374,7 @@ class ScanUploadParseView(LoginRequiredMixin, View):
 
             if len(text) < 80:
                 try:
-                    pix       = page.get_pixmap(matrix=fitz.Matrix(2, 2))
+                    pix       = page.get_pixmap(matrix=pymupdf.Matrix(2, 2))
                     img_bytes = pix.tobytes('png')
                     text      = _ocr_to_text(img_bytes)
                     lines     = []   # OCR path has no position data; fall back to text parser
