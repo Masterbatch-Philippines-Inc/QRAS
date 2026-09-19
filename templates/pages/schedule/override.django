@@ -1,0 +1,266 @@
+{% extends 'base.django' %}
+{% load static %}
+{% block content %}
+    <div class="page-wrapper">
+      {% if dept_warning %}
+      <div class="container-xl mt-4">
+        <div class="alert alert-warning d-flex gap-2 align-items-center">
+          Your account is not assigned to a department. Contact your administrator to get access.
+        </div>
+      </div>
+      {% endif %}
+      <div class="container-xl mt-5">
+        <div class="d-flex align-items-center justify-content-between" style="margin-bottom:.35rem;">
+          <h2 class="mb-0">Management</h2>
+        </div>
+        <ol class="breadcrumb text-secondary" style="margin: 0 0 1rem 0;">
+          <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+          <li class="breadcrumb-item active">Schedule Overrides</li>
+        </ol>
+
+        <div class="row g-3">
+
+          <!-- ─── Assign Override ─── -->
+          <div class="col-md-5">
+            <div class="card">
+              <div class="card-header">
+                <div class="col">
+                  <h3 class="card-title mb-0">Assign Override</h3>
+                  <p class="text-secondary m-0" style="font-size:13px;">Patch a specific date range with a different shift, without touching the employee's normal schedule or rotation.</p>
+                </div>
+              </div>
+              <div class="card-body">
+
+                <div class="mb-3">
+                  <label class="form-label required">Employee</label>
+                  <select id="ov-employee-select" class="form-select">
+                    <option value="">— Select employee —</option>
+                    {% for emp in employees %}
+                    <option value="{{ emp.employee_id }}">{{ emp.last_name }}, {{ emp.first_name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label required">Override Schedule</label>
+                  <select id="ov-schedule-select" class="form-select">
+                    <option value="">— Select schedule —</option>
+                    {% for sched in schedules %}
+                    <option value="{{ sched.id }}">{{ sched.name }} ({{ sched.shift_start|time:"gA" }} - {{ sched.shift_end|time:"gA" }})</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="row g-2 mb-3">
+                  <div class="col-6">
+                    <label class="form-label required">From</label>
+                    <input type="date" id="ov-date-from" class="form-control" />
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label required">To</label>
+                    <input type="date" id="ov-date-to" class="form-control" />
+                  </div>
+                </div>
+                <div class="form-hint mb-3">Leave "To" the same as "From" for a single-day override.</div>
+
+                <div class="mb-3">
+                  <label class="form-label">Reason <span class="text-secondary">(optional)</span></label>
+                  <input type="text" id="ov-reason" class="form-control" placeholder="e.g. Covering night shift" />
+                </div>
+
+                <div id="ov-alert" class="alert d-none mb-3"></div>
+
+                <button id="btn-ov-assign" class="btn btn-primary w-100">Assign Override</button>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- ─── Override Table ─── -->
+          <div class="col-md-7">
+            <div class="card">
+              <div class="card-table">
+                <div class="card-header">
+                  <div class="row w-full">
+                    <div class="col">
+                      <h3 class="card-title mb-0">Active &amp; Past Overrides</h3>
+                      <p class="text-secondary m-0" style="font-size:13px;">Once the date range passes, the override no longer applies — the employee automatically reverts to their normal schedule.</p>
+                    </div>
+                    <div class="col-auto">
+                      <div class="input-group input-group-flat w-auto">
+                        <span class="input-group-text">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/>
+                          </svg>
+                        </span>
+                        <input id="ov-search" type="text" class="form-control" placeholder="Search employee…" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="table-responsive">
+                  <table class="table table-vcenter table-bordered" id="ov-table">
+                    <thead>
+                      <tr>
+                        <th>Employee</th>
+                        <th>Override Schedule</th>
+                        <th>Date Range</th>
+                        <th>Reason</th>
+                        <th>Set By</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for ov in overrides %}
+                      <tr class="ov-row" data-id="{{ ov.id }}">
+                        <td>
+                          <div class="fw-semibold">{{ ov.employee.last_name }}, {{ ov.employee.first_name }}</div>
+                        </td>
+                        <td>{{ ov.schedule.name }}</td>
+                        <td>
+                          {% if ov.date_from == ov.date_to %}
+                            {{ ov.date_from|date:"M d, Y" }}
+                          {% else %}
+                            {{ ov.date_from|date:"M d, Y" }} — {{ ov.date_to|date:"M d, Y" }}
+                          {% endif %}
+                          {% now "Y-m-d" as today %}
+                          {% if ov.date_to|date:"Y-m-d" < today %}
+                            <span class="badge bg-secondary-lt ms-1">Expired</span>
+                          {% else %}
+                            <span class="badge bg-success-lt ms-1">Active</span>
+                          {% endif %}
+                        </td>
+                        <td class="text-secondary">{{ ov.reason|default:"—" }}</td>
+                        <td class="text-secondary">{{ ov.created_by.get_full_name|default:"—" }}</td>
+                        <td>
+                          <button class="btn btn-sm btn-ghost-danger btn-ov-delete" data-id="{{ ov.id }}">
+                            Remove
+                          </button>
+                        </td>
+                      </tr>
+                      {% empty %}
+                      <tr class="tc-django-empty">
+                        <td colspan="6" class="text-center text-secondary py-4">No overrides set.</td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="card-footer d-flex align-items-center">
+                  <div class="dropdown clzst">
+                    <a class="btn dropdown-toggle" data-bs-toggle="dropdown">
+                      <span id="ov-page-count" class="me-1">8</span> records
+                    </a>
+                    <div class="dropdown-menu">
+                      <a class="dropdown-item" onclick="setPageSize(8)">8 records</a>
+                      <a class="dropdown-item" onclick="setPageSize(20)">20 records</a>
+                      <a class="dropdown-item" onclick="setPageSize(50)">50 records</a>
+                    </div>
+                  </div>
+                  <ul class="pagination m-0 ms-auto" id="ov-pagination"></ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function getCookie(name) {
+        let v = null
+        document.cookie.split(';').forEach(c => {
+          const t = c.trim()
+          if (t.startsWith(name + '=')) v = decodeURIComponent(t.slice(name.length + 1))
+        })
+        return v
+      }
+
+      document.getElementById('btn-ov-assign').addEventListener('click', async function () {
+        const alertEl = document.getElementById('ov-alert')
+        alertEl.classList.add('d-none')
+
+        const employeeId = document.getElementById('ov-employee-select').value
+        const scheduleId = document.getElementById('ov-schedule-select').value
+        const dateFrom   = document.getElementById('ov-date-from').value
+        const dateTo     = document.getElementById('ov-date-to').value || dateFrom
+        const reason     = document.getElementById('ov-reason').value
+
+        if (!employeeId || !scheduleId || !dateFrom) {
+          alertEl.className = 'alert alert-danger mb-3'
+          alertEl.textContent = 'Employee, schedule, and start date are required.'
+          alertEl.classList.remove('d-none')
+          return
+        }
+
+        this.disabled = true
+        this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Assigning…'
+
+        try {
+          const res = await fetch("{% url 'schedule-override-create' %}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify({
+              employee_id: employeeId,
+              schedule_id: scheduleId,
+              date_from: dateFrom,
+              date_to: dateTo,
+              reason: reason,
+            }),
+          })
+          const data = await res.json()
+
+          if (data.status === 'created') {
+            alert(`Override assigned to ${data.employee_name}. ${data.recomputed} record(s) recomputed.`)
+            location.reload()
+          } else {
+            alertEl.className = 'alert alert-danger mb-3'
+            alertEl.textContent = data.error || 'Failed to assign override.'
+            alertEl.classList.remove('d-none')
+          }
+        } catch (e) {
+          alertEl.className = 'alert alert-danger mb-3'
+          alertEl.textContent = 'Request failed.'
+          alertEl.classList.remove('d-none')
+        }
+
+        this.disabled = false
+        this.textContent = 'Assign Override'
+      })
+
+      document.addEventListener('click', async function (e) {
+        const btn = e.target.closest('.btn-ov-delete')
+        if (!btn) return
+        if (!confirm('Remove this override? The employee will revert to their normal schedule for these dates.')) return
+
+        btn.disabled = true
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'
+
+        const url = `/schedules/overrides/${btn.dataset.id}/delete/`
+        const res = await fetch(url, { method: 'POST', headers: { 'X-CSRFToken': getCookie('csrftoken') } })
+        const data = await res.json()
+
+        if (data.status === 'deleted') {
+          btn.closest('tr').remove()
+        } else {
+          alert(data.error || 'Failed to remove override.')
+          btn.disabled = false
+          btn.textContent = 'Remove'
+        }
+      })
+    </script>
+    <script>
+      initTableController({
+        searchId:    'ov-search',
+        pageCountId: 'ov-page-count',
+        paginId:     'ov-pagination',
+        rowSelector: '.ov-row',
+        defaultSize: 8,
+        setFnName:   'setPageSize',
+      });
+    </script>
+{% endblock %}

@@ -15,7 +15,9 @@ from apps.qras.models.attendance import (
 from apps.qras.models.schedules import (
     ScheduleRecomputeEvent, 
 )
-from apps.qras.models.schedules import ShiftSchedule, ScheduleActivityLog
+from apps.qras.models.schedules import (
+    ShiftSchedule, ScheduleActivityLog, EmployeeScheduleOverride
+)
 from apps.qras.modules.attendance.computation import compute_attendance_from_logs
 from apps.qras.modules.auth.decorators import permission_required
 from apps.qras.modules.auth.helpers import get_dept_queryset_filter, get_self_exclude
@@ -541,6 +543,124 @@ class AbsenceReportView(LoginRequiredMixin, View):
             'today':              date_type.today().isoformat(),
             'has_query':          has_query,
         })
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  SCHEDULE OVERRIDES — date-specific patches, highest priority in resolution
+# ─────────────────────────────────────────────────────────────────────────────
+
+@method_decorator([permission_required('schedules', 'read')], name='dispatch')
+class ScheduleOverrideView(LoginRequiredMixin, View):
+
+    def get(self, request):
+        dept_filter = get_dept_queryset_filter(request, dept_field_path='department')
+        if dept_filter is None:
+            return render(request, 'pages/schedule/override.django', {'dept_warning': True})
+
+        self_exclude = get_self_exclude(request)
+
+        employees = Employee.objects.filter(
+            is_active=True, is_resigned=False, **dept_filter
+        ).order_by('last_name', 'first_name')
+        if self_exclude:
+            employees = employees.exclude(pk=self_exclude)
+
+        schedules = ShiftSchedule.objects.filter(is_active=True).order_by('name')
+
+        overrides = EmployeeScheduleOverride.objects.filter(
+            employee__in=employees
+        ).select_related('employee', 'schedule', 'created_by').order_by('-date_from')
+
+        return render(request, 'pages/schedule/override.django', {
+            'employees': employees,
+            'schedules': schedules,
+            'overrides': overrides,
+        })
+
+
+@method_decorator([permission_required('schedules', 'create')], name='dispatch')
+class ScheduleOverrideCreateView(LoginRequiredMixin, View):
+
+    def post(self, request):
+        try:
+            data        = json.loads(request.body)
+            employee_id = data.get('employee_id')
+            schedule_id = data.get('schedule_id')
+            date_from   = data.get('date_from')
+            date_to     = data.get('date_to') or date_from
+            reason      = data.get('reason', '').strip()
+
+            if not employee_id or not schedule_id or not date_from:
+                return JsonResponse({"error": "Employee, schedule, and start date are required."}, status=400)
+
+            employee = Employee.objects.get(employee_id=employee_id)
+            schedule = ShiftSchedule.objects.get(id=schedule_id)
+
+            d_from = date.fromisoformat(date_from)
+            d_to   = date.fromisoformat(date_to)
+            if d_from > d_to:
+                return JsonResponse({"error": "Start date must be before or equal to end date."}, status=400)
+
+            override = EmployeeScheduleOverride.objects.create(
+                employee=employee,
+                schedule=schedule,
+                date_from=d_from,
+                date_to=d_to,
+                reason=reason,
+                created_by=request.user,
+            )
+
+            # Recompute any existing attendance records within the override range
+            recomputed = 0
+            affected_dates = Attendance.objects.filter(
+                employee=employee, date__range=(d_from, d_to)
+            ).values_list('date', flat=True)
+            for work_date in affected_dates:
+                compute_attendance_from_logs(employee, work_date)
+                recomputed += 1
+
+            return JsonResponse({
+                "status":        "created",
+                "id":            override.id,
+                "employee_name": f"{employee.last_name}, {employee.first_name}",
+                "schedule_name": schedule.name,
+                "date_from":     d_from.isoformat(),
+                "date_to":       d_to.isoformat(),
+                "recomputed":    recomputed,
+            })
+
+        except Employee.DoesNotExist:
+            return JsonResponse({"error": "Employee not found."}, status=404)
+        except ShiftSchedule.DoesNotExist:
+            return JsonResponse({"error": "Schedule not found."}, status=404)
+        except (TypeError, ValueError):
+            return JsonResponse({"error": "Invalid date."}, status=400)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)
+
+
+@method_decorator([permission_required('schedules', 'delete')], name='dispatch')
+class ScheduleOverrideDeleteView(LoginRequiredMixin, View):
+
+    def post(self, request, pk):
+        try:
+            override = EmployeeScheduleOverride.objects.select_related('employee').get(pk=pk)
+            employee  = override.employee
+            d_from, d_to = override.date_from, override.date_to
+            override.delete()
+
+            # Recompute affected dates so they fall back to rotation/default
+            affected_dates = Attendance.objects.filter(
+                employee=employee, date__range=(d_from, d_to)
+            ).values_list('date', flat=True)
+            for work_date in affected_dates:
+                compute_attendance_from_logs(employee, work_date)
+
+            return JsonResponse({"status": "deleted"})
+        except EmployeeScheduleOverride.DoesNotExist:
+            return JsonResponse({"error": "Override not found."}, status=404)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)
 
 
 @method_decorator([permission_required('schedules', 'read')], name='dispatch')

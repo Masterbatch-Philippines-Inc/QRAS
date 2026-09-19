@@ -10,4 +10,12 @@ from .employee import (
     EmployeeGroup,
     EmployeeGroupMembership,
 )
-from .schedules import ShiftSchedule
+from .schedules import (
+    ShiftSchedule,
+    EmployeeScheduleOverride,
+    RotationGroup,
+    RotationSlot,
+    RotationTeam,
+    RotationTeamMembership,
+    RotationAssignment,
+)

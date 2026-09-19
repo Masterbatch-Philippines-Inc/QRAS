@@ -65,6 +65,7 @@ def _generate_username(first_name, last_name):
 @method_decorator([login_required], name='dispatch')
 class CheckPasswordView(View):
     def post(self, request):
+        from django.http import JsonResponse
         password = request.POST.get('password', '')
         if request.user.check_password(password):
             return JsonResponse({'status': 'ok'})

@@ -92,7 +92,7 @@
     {# ── Management ──────────────────────────────────────── #}
     {% if user_perms.schedules.read or user_perms.unscheduled.read or user_perms.absences.read or user_perms.attendance.read %}
       {% with mgmt_page=request.resolver_match.url_name %}
-        <li class="nav-item dropdown {% if mgmt_page == 'schedule-list' or mgmt_page == 'unscheduled-list' or mgmt_page == 'absence-record' or mgmt_page == 'scan-captures' or mgmt_page == 'recompute-log' %}active show{% endif %}">
+        <li class="nav-item dropdown {% if mgmt_page == 'schedule-list' or mgmt_page == 'schedule-override' or mgmt_page == 'unscheduled-list' or mgmt_page == 'absence-record' or mgmt_page == 'scan-captures' or mgmt_page == 'recompute-log' %}active show{% endif %}">
           <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="false">
             <span class="nav-link-icon d-md-none d-lg-inline-block">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
@@ -107,9 +107,10 @@
             </span>
             <span class="nav-link-title">Management</span>
           </a>
-          <div class="dropdown-menu {% if mgmt_page == 'schedule-list' or mgmt_page == 'unscheduled-list' or mgmt_page == 'absence-record' or mgmt_page == 'scan-captures' or mgmt_page == 'recompute-log' %}show{% endif %}">
+          <div class="dropdown-menu {% if mgmt_page == 'schedule-list' or mgmt_page == 'schedule-override' or mgmt_page == 'unscheduled-list' or mgmt_page == 'absence-record' or mgmt_page == 'scan-captures' or mgmt_page == 'recompute-log' %}show{% endif %}">
             {% if user_perms.schedules.read %}
             <a class="dropdown-item {% if mgmt_page == 'schedule-list' %}active{% endif %}" href="{% url 'schedule-list' %}">Schedule Records</a>
+            <a class="dropdown-item {% if mgmt_page == 'schedule-override' %}active{% endif %}" href="{% url 'schedule-override' %}">Schedule Override</a>
             {% endif %}
             {% if user_perms.unscheduled.read %}
             <a class="dropdown-item {% if mgmt_page == 'unscheduled-list' %}active{% endif %}" href="{% url 'unscheduled-list' %}">Unscheduled Employees</a>

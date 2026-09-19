@@ -111,7 +111,7 @@ urlpatterns = [
     path('positions/<int:pk>/update',               PositionUpdateView.as_view(),               name='position-update'),
     path('positions/<int:pk>/delete',               PositionSoftDeleteView.as_view(),           name='position-delete'),
     path('positions/<int:pk>/employees/',           PositionEmployeesView.as_view(),            name='position-employees'),
-    
+
     # ── Employee Groups ────────────────────────────────────────────
     path('groups',                                  EmployeeGroupListView.as_view(),            name='group-list'),
     path('groups/create',                           EmployeeGroupCreateView.as_view(),          name='group-create'),
@@ -119,8 +119,8 @@ urlpatterns = [
     path('groups/<int:pk>/delete',                  EmployeeGroupSoftDeleteView.as_view(),      name='group-delete'), 
     path('groups/assign/',                          EmployeeGroupAssignView.as_view(),          name='group-assign'),
     path('groups/unassign/',                        EmployeeGroupUnassignView.as_view(),        name='group-unassign'),
-    
-    
+
+    # ── Schedule ───────────────────────────────────────────────────
     path('schedules',                               ScheduleListView.as_view(),                 name='schedule-list'),
     path('schedules/save/',                         ScheduleSaveView.as_view(),                 name='schedule-save'),
     path('schedules/assign/',                       ScheduleAssignRecomputeView.as_view(),      name='schedule-assign'),
@@ -129,10 +129,13 @@ urlpatterns = [
     path('schedules/<int:schedule_id>/delete/',     ScheduleSoftDeleteView.as_view(),           name='schedule-delete'),
     path('schedules/<int:schedule_id>/restore/',    ScheduleRestoreView.as_view(),              name='schedule-restore'),
     path('schedules/assign-recompute',              ScheduleAssignRecomputeView.as_view(),      name='schedule-assign-recompute'),
+    path('schedules/overrides/',                    ScheduleOverrideView.as_view(),             name='schedule-override'),
+    path('schedules/overrides/create/',             ScheduleOverrideCreateView.as_view(),       name='schedule-override-create'),
+    path('schedules/overrides/<int:pk>/delete/',    ScheduleOverrideDeleteView.as_view(),       name='schedule-override-delete'),
     path('schedules/absences/',                     AbsenceReportView.as_view(),                name='absence-record'),
     path('unscheduled',                             UnscheduledRecordsView.as_view(),           name='unscheduled-list'),    
-    
-    
+
+    # ── Reports ────────────────────────────────────────────────────
     path('reports/timesheet/',                      TimesheetReportView.as_view(),              name='timesheet-report'),
     path('reports/timesheet/download/',             TimesheetDownloadView.as_view(),            name='timesheet-download'),
     path('reports/timesheet-actual/',               TimesheetActualReportView.as_view(),        name='timesheet-actual-report'),

@@ -29,17 +29,46 @@ _ND_END   = time(6,  0)  # 06:00 AM
 
 
 def _get_schedule(employee, work_date, override=None):
+    # 0. Explicit caller override (e.g. dashboard/schedule-assign flows
+    #    passing schedule_override=) always wins outright.
     if override:
         return override
+
+    # 1. Employee-level date-specific override (EmployeeScheduleOverride)
+    from apps.qras.models.schedules import (
+        EmployeeScheduleOverride, RotationTeamMembership, RotationAssignment
+    )
+    eo = EmployeeScheduleOverride.objects.filter(
+        employee=employee,
+        date_from__lte=work_date,
+        date_to__gte=work_date,
+    ).select_related('schedule').order_by('-created_at').first()
+    if eo:
+        return eo.schedule
+
+    # 1b. Legacy per-schedule specific_dates (kept for backward compat)
     active_scheds = EmployeeSchedule.objects.filter(
         employee=employee, is_active=True
     ).select_related('schedule')
-    # 1. Date-specific schedule takes priority
     work_date_str = work_date.isoformat()
     for es in active_scheds:
         if es.schedule and work_date_str in (es.schedule.specific_dates or []):
             return es.schedule
-    # 2. Fall back: most recent schedule effective on or before work_date
+
+    # 2. Day-level rotation assignment
+    membership = RotationTeamMembership.objects.filter(
+        employee=employee, is_active=True, team__group__is_active=True
+    ).select_related('team__group').first()
+    if membership:
+        group = membership.team.group
+        week_index = group.week_index_for(work_date)
+        assignment = RotationAssignment.objects.filter(
+            group=group, week_index=week_index, team=membership.team
+        ).select_related('slot__schedule').first()
+        if assignment:
+            return assignment.slot.schedule
+
+    # 3. Single default schedule — most recent effective on or before work_date
     emp_schedule = active_scheds.filter(
         effective_date__lte=work_date
     ).order_by('-effective_date').first()
